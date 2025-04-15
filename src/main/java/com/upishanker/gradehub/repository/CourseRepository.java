@@ -5,4 +5,5 @@ import java.util.List;
 public interface CourseRepository extends JpaRepository<Course, Long> {
     Course findByName(String name);
     List<Course> findByUserId(Long userId);
+    Course findByNameAndUserId(String name,Long userId);
 }
