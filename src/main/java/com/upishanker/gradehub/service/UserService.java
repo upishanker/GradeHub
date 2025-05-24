@@ -18,6 +18,18 @@ public class UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+    public User changeUsername(Long userId, String newUsername) {
+        User currentUser = getUserById(userId);
+        boolean b = !userRepository.existsByUsername(newUsername);
+        if(b) {
+            currentUser.setUsername(newUsername);
+        }
+        else {
+            throw new RuntimeException("Username taken");
+        }
+        return userRepository.save(currentUser);
+    }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
