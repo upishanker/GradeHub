@@ -16,6 +16,7 @@ public class Course {
     private String name;
     private double goal;
     private String semester;
+    private double creditHours;
     @OneToMany(mappedBy = "course" , cascade = CascadeType.ALL)
     private List<Assignment> assignments = new ArrayList<>();
 
@@ -56,6 +57,8 @@ public class Course {
     public void setSemester(String semester) {
         this.semester = semester;
     }
+    public double getCreditHours() {return creditHours;}
+    public void setCreditHours(double creditHours) {this.creditHours = creditHours;}
     public List<Assignment> getAssignments() {
         return assignments;
     }
