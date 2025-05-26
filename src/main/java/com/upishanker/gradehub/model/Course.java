@@ -1,5 +1,6 @@
 package com.upishanker.gradehub.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ public class Course {
     private String semester;
     private double creditHours;
     @OneToMany(mappedBy = "course" , cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Assignment> assignments = new ArrayList<>();
 
     public Course() {}

@@ -1,7 +1,11 @@
 package com.upishanker.gradehub.service;
 
 import com.upishanker.gradehub.model.Assignment;
+import com.upishanker.gradehub.model.Course;
 import com.upishanker.gradehub.repository.AssignmentRepository;
+import com.upishanker.gradehub.dto.CreateAssignmentRequest;
+import com.upishanker.gradehub.dto.UpdateAssignmentRequest;
+import com.upishanker.gradehub.repository.CourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,20 +17,39 @@ import java.time.LocalDateTime;
 public class AssignmentService {
     @Autowired
     private AssignmentRepository assignmentRepository;
-    public Assignment createAssignment(Assignment assignment) {
-        return assignmentRepository.save(assignment);
+    @Autowired
+    private CourseRepository courseRepository;
+    public Assignment createAssignment(CreateAssignmentRequest createRequest) {
+        Course course = courseRepository.findById(createRequest.getCourseId())
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+        Assignment assignment = new Assignment();
+        assignment.setCourse(course);
+        assignment.setName(createRequest.getName());
+        assignment.setGrade(createRequest.getGrade());
+        assignment.setWeight(createRequest.getWeight());
+        assignment.setDueDate(createRequest.getDueDate());
+        assignmentRepository.save(assignment);
+        return assignment;
     }
     public Assignment getAssignmentById(Long id) {
         return assignmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Assignment not found"));
     }
-    public Assignment updateAssignment(Long id, Assignment updatedAssignment) {
-        Assignment currentAssignment = getAssignmentById(id);
-        currentAssignment.setName(updatedAssignment.getName());
-        currentAssignment.setGrade(updatedAssignment.getGrade());
-        currentAssignment.setWeight(updatedAssignment.getWeight());
-        currentAssignment.setDueDate(updatedAssignment.getDueDate());
-        return assignmentRepository.save(currentAssignment);
+    public Assignment updateAssignment(Long id, UpdateAssignmentRequest updateRequest) {
+        Assignment assignment = getAssignmentById(id);
+        if (updateRequest.getName() != null) {
+            assignment.setName(updateRequest.getName());
+        }
+        if (updateRequest.getGrade() != null) {
+            assignment.setGrade(updateRequest.getGrade());
+        }
+        if (updateRequest.getWeight() != null) {
+            assignment.setWeight(updateRequest.getWeight());
+        }
+        if (updateRequest.getDueDate() != null) {
+            assignment.setDueDate(updateRequest.getDueDate());
+        }
+        return assignmentRepository.save(assignment);
     }
     public void deleteAssignment(Long id) {
         assignmentRepository.deleteById(id);
