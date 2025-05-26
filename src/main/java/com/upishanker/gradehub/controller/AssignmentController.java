@@ -3,6 +3,7 @@ import com.upishanker.gradehub.dto.CreateAssignmentRequest;
 import com.upishanker.gradehub.dto.UpdateAssignmentRequest;
 import com.upishanker.gradehub.model.Assignment;
 import com.upishanker.gradehub.service.AssignmentService;
+import com.upishanker.gradehub.dto.AssignmentResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,7 +16,7 @@ public class AssignmentController {
         this.assignmentService = assignmentService;
     }
     @PostMapping
-    public Assignment createAssignment(@RequestBody CreateAssignmentRequest createRequest) {
+    public AssignmentResponse createAssignment(@RequestBody CreateAssignmentRequest createRequest) {
         return assignmentService.createAssignment(createRequest);
     }
     @GetMapping("/{assignmentId}")
@@ -27,7 +28,7 @@ public class AssignmentController {
         return assignmentService.getAssignmentsByCourseId(courseId);
     }
     @PatchMapping("/{assignmentId}")
-    public Assignment updateAssignment(@RequestBody UpdateAssignmentRequest updateRequest, @PathVariable long assignmentId) {
+    public AssignmentResponse updateAssignment(@RequestBody UpdateAssignmentRequest updateRequest, @PathVariable long assignmentId) {
         return assignmentService.updateAssignment(assignmentId, updateRequest);
     }
     @DeleteMapping("/{assignmentId}")

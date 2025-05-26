@@ -1,6 +1,7 @@
 package com.upishanker.gradehub.service;
 
 import com.upishanker.gradehub.model.User;
+import com.upishanker.gradehub.dto.UserResponse;
 import com.upishanker.gradehub.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,14 +12,19 @@ import java.util.List;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
-    public User createUser(User user) {
-        return userRepository.save(user);
+    public UserResponse createUser(User user) {
+        user =  userRepository.save(user);
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail()
+        );
     }
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
-    public User changeUsername(Long userId, String newUsername) {
+    public UserResponse changeUsername(Long userId, String newUsername) {
         User currentUser = getUserById(userId);
         boolean b = !userRepository.existsByUsername(newUsername);
         if(b) {
@@ -27,7 +33,12 @@ public class UserService {
         else {
             throw new RuntimeException("Username taken");
         }
-        return userRepository.save(currentUser);
+        userRepository.save(currentUser);
+        return new UserResponse(
+                currentUser.getId(),
+                currentUser.getUsername(),
+                currentUser.getEmail()
+        );
     }
 
     public List<User> getAllUsers() {

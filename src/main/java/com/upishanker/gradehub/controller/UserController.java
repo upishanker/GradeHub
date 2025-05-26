@@ -2,6 +2,7 @@ package com.upishanker.gradehub.controller;
 
 import com.upishanker.gradehub.model.User;
 import com.upishanker.gradehub.service.UserService;
+import com.upishanker.gradehub.dto.UserResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public class UserController {
         this.userService = userService;
     }
     @PostMapping
-    public User createUser(@RequestBody User user) {
+    public UserResponse createUser(@RequestBody User user) {
         return userService.createUser(user);
     }
     @GetMapping("/{userId}")
@@ -26,7 +27,7 @@ public class UserController {
         return userService.getAllUsers();
     }
     @PatchMapping("/{userId}/username")
-    public User changeUsername(@PathVariable long userId, @RequestBody String newUsername) {
+    public UserResponse changeUsername(@PathVariable long userId, @RequestBody String newUsername) {
         return userService.changeUsername(userId, newUsername);
     }
     @DeleteMapping("/{userId}")

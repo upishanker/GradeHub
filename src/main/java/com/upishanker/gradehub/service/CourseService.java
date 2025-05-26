@@ -6,6 +6,7 @@ import com.upishanker.gradehub.model.Assignment;
 import com.upishanker.gradehub.model.User;
 import com.upishanker.gradehub.repository.CourseRepository;
 import com.upishanker.gradehub.dto.UpdateCourseRequest;
+import com.upishanker.gradehub.dto.CourseResponse;
 import com.upishanker.gradehub.repository.UserRepository;
 import org.hibernate.sql.Update;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ public class CourseService {
     @Autowired
     private UserRepository userRepository;
 
-    public Course createCourse(CreateCourseRequest createRequest) {
+    public CourseResponse createCourse(CreateCourseRequest createRequest) {
         User user = userRepository.findById(createRequest.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Course course = new Course();
@@ -33,7 +34,15 @@ public class CourseService {
         course.setSemester(createRequest.getSemester());
         course.setCreditHours(createRequest.getCreditHours());
 
-        return courseRepository.save(course);
+        courseRepository.save(course);
+        return new CourseResponse(
+                user.getId(),
+                course.getId(),
+                course.getName(),
+                course.getGoal(),
+                course.getSemester(),
+                course.getCreditHours()
+        );
     }
     public Course getCourseById(Long id) {
         return courseRepository.findById(id)
@@ -48,7 +57,7 @@ public class CourseService {
     public Optional<Course> getCourseByNameAndUserId(String name, Long userId) {
         return Optional.ofNullable(courseRepository.findByNameAndUserId(name, userId));
     }
-    public Course updateCourse(Long id, UpdateCourseRequest updateRequest) {
+    public CourseResponse updateCourse(Long id, UpdateCourseRequest updateRequest) {
         Course course = getCourseById(id);
         if (updateRequest.getName() != null) {
             course.setName(updateRequest.getName());
@@ -62,7 +71,15 @@ public class CourseService {
         if (updateRequest.getCreditHours() != null) {
             course.setCreditHours(updateRequest.getCreditHours());
         }
-        return courseRepository.save(course);
+        courseRepository.save(course);
+        return new CourseResponse(
+                course.getUser().getId(),
+                course.getId(),
+                course.getName(),
+                course.getGoal(),
+                course.getSemester(),
+                course.getCreditHours()
+        );
     }
     public BigDecimal calculateGrade(Long courseId){
         BigDecimal totalWeight = BigDecimal.ZERO;

@@ -4,6 +4,7 @@ import com.upishanker.gradehub.dto.UpdateCourseRequest;
 import com.upishanker.gradehub.model.Course;
 import com.upishanker.gradehub.service.CourseService;
 import com.upishanker.gradehub.dto.CreateCourseRequest;
+import com.upishanker.gradehub.dto.CourseResponse;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -15,7 +16,7 @@ public class CourseController {
         this.courseService = courseService;
     }
     @PostMapping
-    public Course createCourse(@RequestBody CreateCourseRequest createRequest) {
+    public CourseResponse createCourse(@RequestBody CreateCourseRequest createRequest) {
         return courseService.createCourse(createRequest);
     }
     @GetMapping("/{courseId}")
@@ -27,7 +28,7 @@ public class CourseController {
         return courseService.getCoursesByUserId(userId);
     }
     @PatchMapping("/{courseId}")
-    public Course updateCourse(@RequestBody UpdateCourseRequest updateRequest, @PathVariable long courseId) {
+    public CourseResponse updateCourse(@RequestBody UpdateCourseRequest updateRequest, @PathVariable long courseId) {
         return courseService.updateCourse(courseId, updateRequest);
     }
     @DeleteMapping("/{courseId}")
