@@ -19,11 +19,11 @@ public class UserController {
         return userService.createUser(user);
     }
     @GetMapping("/{userId}")
-    public User getUser(@PathVariable long userId) {
+    public UserResponse getUser(@PathVariable long userId) {
         return userService.getUserById(userId);
     }
     @GetMapping
-    public List<User> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
         return userService.getAllUsers();
     }
     @PatchMapping("/{userId}/username")

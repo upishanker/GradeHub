@@ -39,12 +39,21 @@ public class AssignmentService {
                 assignment.getDueDate()
         );
     }
-    public Assignment getAssignmentById(Long id) {
-        return assignmentRepository.findById(id)
+    public AssignmentResponse getAssignmentById(Long id) {
+        Assignment assignment = assignmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Assignment not found"));
+        return new AssignmentResponse(
+                assignment.getCourse().getId(),
+                assignment.getId(),
+                assignment.getName(),
+                assignment.getGrade(),
+                assignment.getWeight(),
+                assignment.getDueDate()
+        );
     }
     public AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest updateRequest) {
-        Assignment assignment = getAssignmentById(id);
+        Assignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
         if (updateRequest.getName() != null) {
             assignment.setName(updateRequest.getName());
         }
@@ -70,19 +79,35 @@ public class AssignmentService {
     public void deleteAssignment(Long id) {
         assignmentRepository.deleteById(id);
     }
-    public List<Assignment> getAssignmentsByCourseId(Long courseId) {
-        return assignmentRepository.findByCourseId(courseId);
+    public List<AssignmentResponse> getAssignmentsByCourseId(Long courseId) {
+        return assignmentRepository.findByCourseId(courseId).stream()
+                .map(assignment -> new AssignmentResponse(
+                        assignment.getCourse().getId(),
+                        assignment.getId(),
+                        assignment.getName(),
+                        assignment.getGrade(),
+                        assignment.getWeight(),
+                        assignment.getDueDate()
+                ))
+                .toList();
     }
     public List<Assignment> getAssignmentsByNameAndCourseId(String name, Long courseId) {
         return assignmentRepository.findByNameAndCourseId(name, courseId);
     }
-    public List<Assignment> getUpcomingAssignments(Long courseId) {
+    public List<AssignmentResponse> getUpcomingAssignments(Long courseId) {
         List<Assignment> assignments = assignmentRepository.findByCourseId(courseId);
-        List<Assignment> upcoming = new ArrayList<>();
+        List<AssignmentResponse> upcoming = new ArrayList<>();
         LocalDateTime current = LocalDateTime.now();
         for (Assignment assignment : assignments) {
             if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current.plusDays(7))) {
-                upcoming.add(assignment);
+                upcoming.add(new AssignmentResponse(
+                        assignment.getCourse().getId(),
+                        assignment.getId(),
+                        assignment.getName(),
+                        assignment.getGrade(),
+                        assignment.getWeight(),
+                        assignment.getDueDate()
+                ));
             }
         }
         return upcoming;

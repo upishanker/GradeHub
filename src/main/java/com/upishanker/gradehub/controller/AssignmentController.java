@@ -20,11 +20,11 @@ public class AssignmentController {
         return assignmentService.createAssignment(createRequest);
     }
     @GetMapping("/{assignmentId}")
-    public Assignment getAssignment(@PathVariable long assignmentId) {
+    public AssignmentResponse getAssignment(@PathVariable long assignmentId) {
         return assignmentService.getAssignmentById(assignmentId);
     }
     @GetMapping()
-    public List<Assignment> getAssignmentsByCourseId(@RequestParam long courseId) {
+    public List<AssignmentResponse> getAssignmentsByCourseId(@RequestParam long courseId) {
         return assignmentService.getAssignmentsByCourseId(courseId);
     }
     @PatchMapping("/{assignmentId}")

@@ -8,7 +8,6 @@ import com.upishanker.gradehub.repository.CourseRepository;
 import com.upishanker.gradehub.dto.UpdateCourseRequest;
 import com.upishanker.gradehub.dto.CourseResponse;
 import com.upishanker.gradehub.repository.UserRepository;
-import org.hibernate.sql.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -48,11 +47,17 @@ public class CourseService {
         return courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
     }
-    public List<Course> getCoursesByUserId(Long userId) {
-        return courseRepository.findByUserId(userId);
-    }
-    public List<Course> getAllCourses() {
-        return courseRepository.findAll();
+    public List<CourseResponse> getCoursesByUserId(Long userId) {
+        return courseRepository.findByUserId(userId).stream()
+                .map(course -> new CourseResponse(
+                        course.getUser().getId(),
+                        course.getId(),
+                        course.getName(),
+                        course.getGoal(),
+                        course.getSemester(),
+                        course.getCreditHours()
+                ))
+                .toList();
     }
     public Optional<Course> getCourseByNameAndUserId(String name, Long userId) {
         return Optional.ofNullable(courseRepository.findByNameAndUserId(name, userId));

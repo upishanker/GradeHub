@@ -6,6 +6,7 @@ import com.upishanker.gradehub.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -20,12 +21,18 @@ public class UserService {
                 user.getEmail()
         );
     }
-    public User getUserById(Long id) {
-        return userRepository.findById(id)
+    public UserResponse getUserById(Long id) {
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail()
+        );
     }
     public UserResponse changeUsername(Long userId, String newUsername) {
-        User currentUser = getUserById(userId);
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         boolean b = !userRepository.existsByUsername(newUsername);
         if(b) {
             currentUser.setUsername(newUsername);
@@ -41,8 +48,14 @@ public class UserService {
         );
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> new UserResponse(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getEmail()
+                ))
+                .toList();
     }
     public void deleteUser(Long id) {
         userRepository.deleteById(id);

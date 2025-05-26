@@ -24,7 +24,7 @@ public class CourseController {
         return courseService.getCourseById(courseId);
     }
     @GetMapping
-    public List<Course> getCourseByUserId(@RequestParam long userId) {
+    public List<CourseResponse> getCourseByUserId(@RequestParam long userId) {
         return courseService.getCoursesByUserId(userId);
     }
     @PatchMapping("/{courseId}")
