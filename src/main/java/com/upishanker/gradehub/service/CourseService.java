@@ -43,9 +43,17 @@ public class CourseService {
                 course.getCreditHours()
         );
     }
-    public Course getCourseById(Long id) {
-        return courseRepository.findById(id)
+    public CourseResponse getCourseById(Long id) {
+        Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
+        return new CourseResponse(
+                course.getUser().getId(),
+                course.getId(),
+                course.getName(),
+                course.getGoal(),
+                course.getSemester(),
+                course.getCreditHours()
+        );
     }
     public List<CourseResponse> getCoursesByUserId(Long userId) {
         return courseRepository.findByUserId(userId).stream()
@@ -59,11 +67,20 @@ public class CourseService {
                 ))
                 .toList();
     }
-    public Optional<Course> getCourseByNameAndUserId(String name, Long userId) {
-        return Optional.ofNullable(courseRepository.findByNameAndUserId(name, userId));
+    public CourseResponse getCourseByNameAndUserId(String name, Long userId) {
+        Course course = courseRepository.findByNameAndUserId(name, userId);
+        return new CourseResponse(
+                course.getUser().getId(),
+                course.getId(),
+                course.getName(),
+                course.getGoal(),
+                course.getSemester(),
+                course.getCreditHours()
+        );
     }
     public CourseResponse updateCourse(Long id, UpdateCourseRequest updateRequest) {
-        Course course = getCourseById(id);
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
         if (updateRequest.getName() != null) {
             course.setName(updateRequest.getName());
         }
@@ -89,7 +106,9 @@ public class CourseService {
     public BigDecimal calculateGrade(Long courseId){
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalGrade = BigDecimal.ZERO;
-        List<Assignment> assignments = getCourseById(courseId).getAssignments();
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+        List<Assignment> assignments = course.getAssignments();
         for (Assignment assignment : assignments) {
             if (assignment.getGrade() != null && assignment.getWeight() != null) {
                 totalGrade = totalGrade.add(

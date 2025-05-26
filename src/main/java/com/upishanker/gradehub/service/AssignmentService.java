@@ -91,8 +91,17 @@ public class AssignmentService {
                 ))
                 .toList();
     }
-    public List<Assignment> getAssignmentsByNameAndCourseId(String name, Long courseId) {
-        return assignmentRepository.findByNameAndCourseId(name, courseId);
+    public List<AssignmentResponse> getAssignmentsByNameAndCourseId(String name, Long courseId) {
+        return assignmentRepository.findByNameAndCourseId(name, courseId).stream()
+                .map(assignment -> new AssignmentResponse(
+                        assignment.getCourse().getId(),
+                        assignment.getId(),
+                        assignment.getName(),
+                        assignment.getGrade(),
+                        assignment.getWeight(),
+                        assignment.getDueDate()
+                ))
+                .toList();
     }
     public List<AssignmentResponse> getUpcomingAssignments(Long courseId) {
         List<Assignment> assignments = assignmentRepository.findByCourseId(courseId);
@@ -112,13 +121,20 @@ public class AssignmentService {
         }
         return upcoming;
     }
-    public List<Assignment> getOverdueAssignments(Long courseId) {
+    public List<AssignmentResponse> getOverdueAssignments(Long courseId) {
         List<Assignment> assignments = assignmentRepository.findByCourseId(courseId);
-        List<Assignment> overdue = new ArrayList<>();
+        List<AssignmentResponse> overdue = new ArrayList<>();
         LocalDateTime current = LocalDateTime.now();
         for (Assignment assignment : assignments) {
             if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current)) {
-                overdue.add(assignment);
+                overdue.add(new AssignmentResponse(
+                        assignment.getCourse().getId(),
+                        assignment.getId(),
+                        assignment.getName(),
+                        assignment.getGrade(),
+                        assignment.getWeight(),
+                        assignment.getDueDate()
+                ));
             }
         }
         return overdue;

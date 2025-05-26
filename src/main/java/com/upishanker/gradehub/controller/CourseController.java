@@ -20,7 +20,7 @@ public class CourseController {
         return courseService.createCourse(createRequest);
     }
     @GetMapping("/{courseId}")
-    public Course getCourse(@PathVariable long courseId) {
+    public CourseResponse getCourse(@PathVariable long courseId) {
         return courseService.getCourseById(courseId);
     }
     @GetMapping
