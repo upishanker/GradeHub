@@ -1,5 +1,7 @@
 package com.upishanker.gradehub.service;
 
+import com.upishanker.gradehub.exceptions.AssignmentNotFoundException;
+import com.upishanker.gradehub.exceptions.CourseNotFoundException;
 import com.upishanker.gradehub.model.Assignment;
 import com.upishanker.gradehub.model.Course;
 import com.upishanker.gradehub.repository.AssignmentRepository;
@@ -8,6 +10,7 @@ import com.upishanker.gradehub.dto.UpdateAssignmentRequest;
 import com.upishanker.gradehub.repository.CourseRepository;
 import com.upishanker.gradehub.dto.AssignmentResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.expression.spel.ast.Assign;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,7 +25,7 @@ public class AssignmentService {
     private CourseRepository courseRepository;
     public AssignmentResponse createAssignment(CreateAssignmentRequest createRequest) {
         Course course = courseRepository.findById(createRequest.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + createRequest.getCourseId()));
         Assignment assignment = new Assignment();
         assignment.setCourse(course);
         assignment.setName(createRequest.getName());
@@ -41,7 +44,7 @@ public class AssignmentService {
     }
     public AssignmentResponse getAssignmentById(Long id) {
         Assignment assignment = assignmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new AssignmentNotFoundException("Assignment not found with ID: " + id));
         return new AssignmentResponse(
                 assignment.getCourse().getId(),
                 assignment.getId(),
@@ -53,7 +56,7 @@ public class AssignmentService {
     }
     public AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest updateRequest) {
         Assignment assignment = assignmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new AssignmentNotFoundException("Assignment not found with ID: " + id));
         if (updateRequest.getName() != null) {
             assignment.setName(updateRequest.getName());
         }

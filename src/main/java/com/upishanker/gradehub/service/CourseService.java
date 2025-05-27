@@ -1,6 +1,8 @@
 package com.upishanker.gradehub.service;
 
 import com.upishanker.gradehub.dto.CreateCourseRequest;
+import com.upishanker.gradehub.exceptions.CourseNotFoundException;
+import com.upishanker.gradehub.exceptions.UserNotFoundException;
 import com.upishanker.gradehub.model.Course;
 import com.upishanker.gradehub.model.Assignment;
 import com.upishanker.gradehub.model.User;
@@ -25,7 +27,7 @@ public class CourseService {
 
     public CourseResponse createCourse(CreateCourseRequest createRequest) {
         User user = userRepository.findById(createRequest.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + createRequest.getUserId()));
         Course course = new Course();
         course.setUser(user);
         course.setName(createRequest.getName());
@@ -45,7 +47,7 @@ public class CourseService {
     }
     public CourseResponse getCourseById(Long id) {
         Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + id));
         return new CourseResponse(
                 course.getUser().getId(),
                 course.getId(),
@@ -80,7 +82,7 @@ public class CourseService {
     }
     public CourseResponse updateCourse(Long id, UpdateCourseRequest updateRequest) {
         Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + id));
         if (updateRequest.getName() != null) {
             course.setName(updateRequest.getName());
         }
@@ -107,7 +109,7 @@ public class CourseService {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalGrade = BigDecimal.ZERO;
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+                .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
         List<Assignment> assignments = course.getAssignments();
         for (Assignment assignment : assignments) {
             if (assignment.getGrade() != null && assignment.getWeight() != null) {

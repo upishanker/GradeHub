@@ -1,5 +1,7 @@
 package com.upishanker.gradehub.service;
 
+import com.upishanker.gradehub.exceptions.UserNotFoundException;
+import com.upishanker.gradehub.exceptions.UsernameTakenException;
 import com.upishanker.gradehub.model.User;
 import com.upishanker.gradehub.dto.UserResponse;
 import com.upishanker.gradehub.repository.UserRepository;
@@ -23,7 +25,7 @@ public class UserService {
     }
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
@@ -32,13 +34,13 @@ public class UserService {
     }
     public UserResponse changeUsername(Long userId, String newUsername) {
         User currentUser = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
         boolean b = !userRepository.existsByUsername(newUsername);
         if(b) {
             currentUser.setUsername(newUsername);
         }
         else {
-            throw new RuntimeException("Username taken");
+            throw new UsernameTakenException("Username '" + newUsername + "' taken");
         }
         userRepository.save(currentUser);
         return new UserResponse(
