@@ -2,11 +2,19 @@ package com.upishanker.gradehub.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import jakarta.validation.constraints.*;
 
 public class CreateAssignmentRequest {
     private Long courseId;
+    @NotBlank
+    @Size(max = 100)
     private String name;
+    @Min(0)
+    @Max(120)
     private BigDecimal grade;
+    @NotNull
+    @Min(0)
+    @Max(100)
     private BigDecimal weight;
     private LocalDateTime dueDate;
 

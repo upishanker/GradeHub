@@ -1,11 +1,22 @@
 package com.upishanker.gradehub.dto;
 
 
+import jakarta.validation.constraints.*;
+
 public class CreateCourseRequest {
     private Long userId;
+    @NotBlank
+    @Size(max = 100)
     private String name;
+    @Min(0)
+    @Max(100)
     private Double goal;
+    @NotBlank
+    @Size(max = 50)
     private String semester;
+    @NotNull
+    @Min(1)
+    @Max(6)
     private Double creditHours;
     public CreateCourseRequest() {}
     public CreateCourseRequest(Long userId, String name, Double goal, String semester, Double creditHours) {

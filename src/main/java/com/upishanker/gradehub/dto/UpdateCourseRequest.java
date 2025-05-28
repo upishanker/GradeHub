@@ -1,9 +1,20 @@
 package com.upishanker.gradehub.dto;
 
+import jakarta.validation.constraints.*;
+
 public class UpdateCourseRequest {
+    @NotBlank
+    @Size(max = 100)
     private String name;
+    @Min(0)
+    @Max(100)
     private Double goal;
+    @NotBlank
+    @Size(max = 50)
     private String semester;
+    @NotNull
+    @Min(1)
+    @Max(6)
     private Double creditHours;
     
     public UpdateCourseRequest() {}
