@@ -1,5 +1,6 @@
 package com.upishanker.gradehub.controller;
 
+import com.upishanker.gradehub.dto.CreateUserRequest;
 import com.upishanker.gradehub.model.User;
 import com.upishanker.gradehub.service.UserService;
 import com.upishanker.gradehub.dto.UserResponse;
@@ -15,8 +16,8 @@ public class UserController {
         this.userService = userService;
     }
     @PostMapping
-    public UserResponse createUser(@RequestBody User user) {
-        return userService.createUser(user);
+    public UserResponse createUser(@RequestBody CreateUserRequest createRequest) {
+        return userService.createUser(createRequest);
     }
     @GetMapping("/{userId}")
     public UserResponse getUser(@PathVariable long userId) {

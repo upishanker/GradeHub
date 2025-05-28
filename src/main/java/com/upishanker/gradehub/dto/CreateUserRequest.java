@@ -8,11 +8,15 @@ public class CreateUserRequest {
     @NotBlank
     @Email
     private String email;
+    @NotBlank
+    @Size(min = 8, max = 100)
+    private String password;
 
     public CreateUserRequest() {}
-    public CreateUserRequest(String username, String email) {
+    public CreateUserRequest(String username, String email, String password) {
         this.username = username;
         this.email = email;
+        this.password = password;
     }
     public String getUsername() {
         return username;
@@ -25,5 +29,11 @@ public class CreateUserRequest {
     }
     public void setEmail(String email) {
         this.email = email;
+    }
+    public String getPassword() {
+        return password;
+    }
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
