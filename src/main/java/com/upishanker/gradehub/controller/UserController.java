@@ -1,6 +1,8 @@
 package com.upishanker.gradehub.controller;
 
+import com.upishanker.gradehub.dto.ChangePasswordRequest;
 import com.upishanker.gradehub.dto.CreateUserRequest;
+import com.upishanker.gradehub.dto.UpdateUserRequest;
 import com.upishanker.gradehub.model.User;
 import com.upishanker.gradehub.service.UserService;
 import com.upishanker.gradehub.dto.UserResponse;
@@ -27,9 +29,13 @@ public class UserController {
     public List<UserResponse> getAllUsers() {
         return userService.getAllUsers();
     }
-    @PatchMapping("/{userId}/username")
-    public UserResponse changeUsername(@PathVariable long userId, @RequestBody String newUsername) {
-        return userService.changeUsername(userId, newUsername);
+    @PatchMapping("/{userId}")
+    public UserResponse updateUser(@PathVariable long userId, @RequestBody UpdateUserRequest updateRequest) {
+        return userService.updateUser(userId, updateRequest);
+    }
+    @PatchMapping("/{userId}/password")
+    public UserResponse changePassword(@PathVariable long userId, @RequestBody ChangePasswordRequest changePasswordRequest) {
+        return userService.changePassword(userId, changePasswordRequest);
     }
     @DeleteMapping("/{userId}")
     public void  deleteUser(@PathVariable long userId) {

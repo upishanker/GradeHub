@@ -2,9 +2,11 @@ package com.upishanker.gradehub.service;
 
 import com.upishanker.gradehub.dto.CreateUserRequest;
 import com.upishanker.gradehub.dto.UpdateUserRequest;
+import com.upishanker.gradehub.dto.ChangePasswordRequest;
 import com.upishanker.gradehub.exceptions.CourseNotFoundException;
 import com.upishanker.gradehub.exceptions.UserNotFoundException;
 import com.upishanker.gradehub.exceptions.UsernameTakenException;
+import com.upishanker.gradehub.exceptions.IncorrectPasswordException;
 import com.upishanker.gradehub.model.User;
 import com.upishanker.gradehub.dto.UserResponse;
 import com.upishanker.gradehub.repository.UserRepository;
@@ -24,9 +26,9 @@ public class UserService {
     }
     public UserResponse createUser(CreateUserRequest createRequest) {
         User user = new User();
-        user.setUsername(createRequest.getUsername());
-        user.setEmail(createRequest.getEmail());
-        user.setPassword(passwordEncoder.encode(createRequest.getPassword()));
+        user.setUsername(createRequest.username());
+        user.setEmail(createRequest.email());
+        user.setPassword(passwordEncoder.encode(createRequest.password()));
         userRepository.save(user);
         return new UserResponse(
                 user.getId(),
@@ -80,7 +82,23 @@ public class UserService {
                 user.getEmail()
         );
     }
-
+    public UserResponse changePassword(Long userId, ChangePasswordRequest changeRequest) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+        if (!passwordEncoder.matches(changeRequest.currentPassword(), user.getPassword())) {
+            throw new IncorrectPasswordException("Current password is incorrect");
+        }
+        if (passwordEncoder.matches(changeRequest.newPassword(), user.getPassword())) {
+            throw new IncorrectPasswordException("New password cannot be the same as the current password");
+        }
+        user.setPassword(passwordEncoder.encode(changeRequest.newPassword()));
+        userRepository.save(user);
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail()
+        );
+    }
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(user -> new UserResponse(

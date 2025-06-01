@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Optional;
 
 @Service
 public class CourseService {
@@ -26,14 +25,14 @@ public class CourseService {
     private UserRepository userRepository;
 
     public CourseResponse createCourse(CreateCourseRequest createRequest) {
-        User user = userRepository.findById(createRequest.getUserId())
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + createRequest.getUserId()));
+        User user = userRepository.findById(createRequest.userId())
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + createRequest.userId()));
         Course course = new Course();
         course.setUser(user);
-        course.setName(createRequest.getName());
-        course.setGoal(createRequest.getGoal());
-        course.setSemester(createRequest.getSemester());
-        course.setCreditHours(createRequest.getCreditHours());
+        course.setName(createRequest.name());
+        course.setGoal(createRequest.goal());
+        course.setSemester(createRequest.semester());
+        course.setCreditHours(createRequest.creditHours());
 
         courseRepository.save(course);
         return new CourseResponse(
