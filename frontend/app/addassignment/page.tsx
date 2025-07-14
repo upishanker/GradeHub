@@ -13,10 +13,35 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {NavBar} from "@/app/navbar/Navbar";
+import { Check, ChevronsUpDown } from "lucide-react"
 import { useSearchParams } from "next/navigation";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList
+} from "@/components/ui/command";
+import {cn} from "@/lib/utils";
+
+const categories = [
+    { label: "Assignment", value: "assignment" },
+    { label: "Quiz", value: "quiz" },
+    { label: "Test", value: "test" },
+    { label: "Exam", value: "exam" },
+    { label: "Project", value: "project" },
+    { label: "Essay", value: "essay" },
+] as const
 
 const formSchema = z.object({
     name: z.string().max(100, { message: 'Name must be less than 100 characters.' }),
+    category: z.string(),
     grade: z.preprocess(
         (val) => (val === '' ? undefined : Number(val)),
         z.number().min(0, { message: 'Grade must be at least 0.' }).max(120, { message: 'Grade must be at most 120.' })
@@ -27,12 +52,11 @@ const formSchema = z.object({
     dueDate: z.string().refine(val => !isNaN(Date.parse(val)), {
         message: 'Invalid datetime',
     }),
-
 });
 
 
 
-export default function SignupPage() {
+export default function AddAssignment() {
     const params = useSearchParams();
     const search = params.get('id')
     const router = useRouter();
@@ -40,6 +64,7 @@ export default function SignupPage() {
 
     const [formValues, setFormValues] = useState({
         name: '',
+        category: '',
         grade: '',
         weight: '',
         dueDate: '',
@@ -68,6 +93,7 @@ export default function SignupPage() {
         }
         const assignmentRequest = {
             courseId: search,
+            category: result.data.category,
             name: result.data.name,
             grade: Number(result.data.grade),
             weight: Number(result.data.weight),
@@ -120,7 +146,62 @@ export default function SignupPage() {
                                     <p className="text-sm text-red-600">{errors.name}</p>
                                 )}
                             </div>
-
+                            <div className="space-y-1">
+                                <Label htmlFor="category">Category</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            >
+                                            {formValues.category
+                                            ? categories.find(
+                                                    (category => category.value === formValues.category)
+                                                )?.label
+                                            : "Select category"}
+                                            <ChevronsUpDown />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent>
+                                        <Command>
+                                            <CommandInput
+                                                placeholder="Search Category..."
+                                            />
+                                            <CommandList>
+                                                <CommandEmpty>No category found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {categories.map(category => (
+                                                        <CommandItem
+                                                            value={category.label}
+                                                            key={category.value}
+                                                            onSelect={() => {
+                                                                setFormValues(prev => ({
+                                                                    ...prev,
+                                                                    category: category.value
+                                                                }));
+                                                                setErrors(prev => ({
+                                                                    ...prev,
+                                                                    category: ''
+                                                                }));
+                                                            }}
+                                                        >
+                                                            {category.label}
+                                                            <Check  className={cn(
+                                                                category.value === formValues.category
+                                                                    ? "opacity-100"
+                                                                    : "opacity-0"
+                                                            )}/>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                {errors.category && (
+                                    <p className="text-sm text-red-600">{errors.category}</p>
+                                )}
+                            </div>
                             <div className="space-y-1">
                                 <Label htmlFor="grade">Grade</Label>
                                 <Input

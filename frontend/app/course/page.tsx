@@ -31,8 +31,9 @@ export default function Course() {
     const search = params.get('id')
     const { data, error } = useSWR("http://localhost:8080/api/assignments?courseId=" + search, fetcher)
     const { data: courseData, error: courseError} = useSWR('http://localhost:8080/api/courses/' + search, fetcher);
+    const { data: categoryData, error: categoryError} =  useSWR('http://localhost:8080/api/categories?courseId=' + search, fetcher);
 
-    if(error || courseError) return 'An error has occured'
+    if(error || courseError || categoryError) return 'An error has occured'
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(courseData?.name ?? "");
     const [goal, setGoal] = useState(courseData?.email ?? "");
@@ -145,6 +146,37 @@ export default function Course() {
                         </>
                     </CardContent>
                 </Card>
+                <div className="ml-20">
+                    <h1 className="text-center text-4xl font-bold mt-40 -mb-30">Categories</h1>
+                    <div className="flex justify-center items-center min-h-screen">
+                        <div className="grid grid-cols-4 gap-5">
+                            {categoryData?.map((category) => (
+                                <Card key={category.id}>
+                                    <CardHeader>
+                                        <h1 className="text-center">{category.name}</h1>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <h1 className="text-center">Weight: {category.weight ?? "N/A"}%</h1>
+                                    </CardContent>
+                                    <CardFooter className="flex justify-center">
+                                        <Button variant="destructive" onClick={async () => {
+                                            await fetch('http://localhost:8080/api/categories/' + category.id, { method: 'DELETE' });
+                                            mutate("http://localhost:8080/api/categories?courseId=" + search);
+                                        }}>
+                                            Delete
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                            <Button asChild className="h-50 rounded-0.5rem">
+                                <Link href={"/addcategory?id=" + search}>
+                                    Add Category
+                                    <Plus />
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
                 <div className="ml-20">
                     <h1 className="text-center text-4xl font-bold mt-40 -mb-30">Assignments</h1>
                     <div className="flex justify-center items-center min-h-screen">

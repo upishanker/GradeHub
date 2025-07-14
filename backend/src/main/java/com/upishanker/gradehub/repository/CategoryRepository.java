@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findByCourseId(Long courseId);
+    Category findByCourseIdAndName(Long courseId, String name);
 }

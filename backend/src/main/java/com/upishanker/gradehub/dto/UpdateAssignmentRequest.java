@@ -9,6 +9,7 @@ public class UpdateAssignmentRequest {
     @NotBlank
     @Size(max = 100)
     private String name;
+    private String category;
     @Min(0)
     @Max(120)
     private BigDecimal grade;
@@ -19,11 +20,18 @@ public class UpdateAssignmentRequest {
     private LocalDateTime dueDate;
 
     public UpdateAssignmentRequest() {}
-    public UpdateAssignmentRequest(String name, BigDecimal grade, BigDecimal weight, LocalDateTime dueDate) {
+    public UpdateAssignmentRequest(String category, String name, BigDecimal grade, BigDecimal weight, LocalDateTime dueDate) {
+        this.category = category;
         this.name = name;
         this.grade = grade;
         this.weight = weight;
         this.dueDate = dueDate;
+    }
+    public String getCategory() {
+        return category;
+    }
+    public void setCategory(String category) {
+        this.category = category;
     }
     public String getName() {
         return name;
