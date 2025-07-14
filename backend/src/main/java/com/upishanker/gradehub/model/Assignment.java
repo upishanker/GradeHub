@@ -10,9 +10,11 @@ public class Assignment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    @JoinColumn(name = "course_id")
-
+    @JoinColumn(name = "course_id", nullable = false)
     private Course course;
+    @ManyToOne
+    @JoinColumn(name = "category")
+    private Category category;
     private String name;
     private BigDecimal grade;
     private BigDecimal weight;
