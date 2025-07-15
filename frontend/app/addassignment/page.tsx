@@ -29,26 +29,43 @@ import {
     CommandList
 } from "@/components/ui/command";
 import {cn} from "@/lib/utils";
+import useSWR from "swr";
 
-const categories = [
-    { label: "Assignment", value: "assignment" },
-    { label: "Quiz", value: "quiz" },
-    { label: "Test", value: "test" },
-    { label: "Exam", value: "exam" },
-    { label: "Project", value: "project" },
-    { label: "Essay", value: "essay" },
-] as const
 
-const formSchema = z.object({
+
+const fetcher = async (url: string) => {
+    const token = localStorage.getItem("token");
+    const response = await fetch(url, {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    if (!response.ok) {
+        throw new Error("Failed to fetch");
+    }
+    return await response.json();
+};
+
+
+
+const createFormSchema = (useCategory: boolean) => z.object({
     name: z.string().max(100, { message: 'Name must be less than 100 characters.' }),
-    category: z.string(),
+    category: useCategory
+        ? z.string().min(1, { message: 'Category is required when using categories.' })
+        : z.string().optional(),
     grade: z.preprocess(
         (val) => (val === '' ? undefined : Number(val)),
         z.number().min(0, { message: 'Grade must be at least 0.' }).max(120, { message: 'Grade must be at most 120.' })
     ),
-    weight: z.preprocess(
-        (val) => (val === '' ? undefined : Number(val)),
-        z.number().min(0, {message: 'Weight must be at least 0'}).max(100, { message: 'Weight must be at most 100.' })),
+    weight: useCategory
+        ? z.any().optional() // Weight is not validated when using categories
+        : z.preprocess(
+            (val) => {
+                if (val === '' || val === null) return undefined;
+                return Number(val);
+            },
+            z.number().min(0, { message: 'Weight must be at least 0' }).max(100, { message: 'Weight must be at most 100' })
+        ),
     dueDate: z.string().refine(val => !isNaN(Date.parse(val)), {
         message: 'Invalid datetime',
     }),
@@ -68,9 +85,11 @@ export default function AddAssignment() {
         grade: '',
         weight: '',
         dueDate: '',
+        useCategory: false
     });
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [useCategory, setUseCategory] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormValues({ ...formValues, [e.target.name]: e.target.value });
@@ -79,6 +98,7 @@ export default function AddAssignment() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const formSchema = createFormSchema(useCategory);
         const result = formSchema.safeParse(formValues);
 
         if (!result.success) {
@@ -93,11 +113,12 @@ export default function AddAssignment() {
         }
         const assignmentRequest = {
             courseId: search,
-            category: result.data.category,
             name: result.data.name,
             grade: Number(result.data.grade),
-            weight: Number(result.data.weight),
             dueDate: result.data.dueDate,
+            ...(useCategory
+                ? { category: result.data.category}
+                : { weight: Number(result.data.weight) })
         };
 
         try {
@@ -122,6 +143,10 @@ export default function AddAssignment() {
             alert('An error occurred')
         }
     };
+    const { data: categoryData, error: categoryError} =  useSWR('http://localhost:8080/api/categories?courseId=' + search, fetcher);
+    const selectedCategory = useCategory
+        ? categoryData?.find(cat => cat.name === formValues.category)
+        : null;
 
     return (
         <div>
@@ -146,62 +171,83 @@ export default function AddAssignment() {
                                     <p className="text-sm text-red-600">{errors.name}</p>
                                 )}
                             </div>
-                            <div className="space-y-1">
-                                <Label htmlFor="category">Category</Label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            >
-                                            {formValues.category
-                                            ? categories.find(
-                                                    (category => category.value === formValues.category)
-                                                )?.label
-                                            : "Select category"}
-                                            <ChevronsUpDown />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent>
-                                        <Command>
-                                            <CommandInput
-                                                placeholder="Search Category..."
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>No category found.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {categories.map(category => (
-                                                        <CommandItem
-                                                            value={category.label}
-                                                            key={category.value}
-                                                            onSelect={() => {
-                                                                setFormValues(prev => ({
-                                                                    ...prev,
-                                                                    category: category.value
-                                                                }));
-                                                                setErrors(prev => ({
-                                                                    ...prev,
-                                                                    category: ''
-                                                                }));
-                                                            }}
-                                                        >
-                                                            {category.label}
-                                                            <Check  className={cn(
-                                                                category.value === formValues.category
-                                                                    ? "opacity-100"
-                                                                    : "opacity-0"
-                                                            )}/>
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                {errors.category && (
-                                    <p className="text-sm text-red-600">{errors.category}</p>
-                                )}
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    id="useCategory"
+                                    type="checkbox"
+                                    checked={useCategory}
+                                    onChange={(e) => {
+                                        setUseCategory(e.target.checked);
+                                        setFormValues(prev => ({
+                                            ...prev,
+                                            category: '',
+                                            weight: ''
+                                        }));
+                                        setErrors(prev => ({
+                                            ...prev,
+                                            category: '',
+                                            weight: ''
+                                        }));
+                                    }}
+                                    className="accent-primary h-4 w-4"
+                                />
+                                <Label htmlFor="useCategory">Use Category</Label>
                             </div>
+                            {useCategory && (
+                                <div className="space-y-1">
+                                    <Label htmlFor="category">Category</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className={cn(formValues.category ? "text-black" : "text-muted-foreground")}
+                                            >
+                                                {formValues.category || "Select category"}
+                                                <ChevronsUpDown className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent>
+                                            <Command>
+                                                <CommandInput placeholder="Search Category..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No category found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {categoryData?.map(category => (
+                                                            <CommandItem
+                                                                key={category.id}
+                                                                value={category.name}
+                                                                onSelect={() => {
+                                                                    setFormValues(prev => ({
+                                                                        ...prev,
+                                                                        category: category.name,
+                                                                    }));
+                                                                    setErrors(prev => ({
+                                                                        ...prev,
+                                                                        category: '',
+                                                                    }));
+                                                                }}
+                                                            >
+                                                                {category.name}
+                                                                <Check
+                                                                    className={cn(
+                                                                        category.name === formValues.category
+                                                                            ? "opacity-100 ml-2"
+                                                                            : "opacity-0 ml-2"
+                                                                    )}
+                                                                />
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    {errors.category && (
+                                        <p className="text-sm text-red-600">{errors.category}</p>
+                                    )}
+                                </div>
+                            )}
                             <div className="space-y-1">
                                 <Label htmlFor="grade">Grade</Label>
                                 <Input
@@ -222,9 +268,16 @@ export default function AddAssignment() {
                                     id="weight"
                                     name="weight"
                                     placeholder="50"
-                                    value={formValues.weight}
+                                    value={
+                                        useCategory
+                                            ? selectedCategory?.weight?.toString() ?? ''
+                                            : formValues.weight
+                                    }
                                     onChange={handleChange}
+                                    disabled={useCategory}
+                                    className={useCategory ? "bg-gray-200 cursor-not-allowed" : ""}
                                 />
+
                                 {errors.weight && (
                                     <p className="text-sm text-red-600">{errors.weight}</p>
                                 )}

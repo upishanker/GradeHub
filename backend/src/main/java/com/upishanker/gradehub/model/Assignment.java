@@ -13,7 +13,7 @@ public class Assignment {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
     @ManyToOne
-    @JoinColumn(name = "category_id")
+    @JoinColumn(name = "category_id", nullable = true)
     private Category category;
     private String name;
     private BigDecimal grade;
