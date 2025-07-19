@@ -40,6 +40,12 @@ public class Assignment {
     public void setCourse(Course course) {
         this.course = course;
     }
+    public Category getCategory() {
+        return category;
+    }
+    public void setCategory(Category category) {
+        this.category = category;
+    }
     public String getName() {
         return name;
     }

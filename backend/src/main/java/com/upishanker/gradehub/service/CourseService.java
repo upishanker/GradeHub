@@ -3,9 +3,11 @@ package com.upishanker.gradehub.service;
 import com.upishanker.gradehub.dto.CreateCourseRequest;
 import com.upishanker.gradehub.exceptions.CourseNotFoundException;
 import com.upishanker.gradehub.exceptions.UserNotFoundException;
+import com.upishanker.gradehub.model.Category;
 import com.upishanker.gradehub.model.Course;
 import com.upishanker.gradehub.model.Assignment;
 import com.upishanker.gradehub.model.User;
+import com.upishanker.gradehub.repository.CategoryRepository;
 import com.upishanker.gradehub.repository.CourseRepository;
 import com.upishanker.gradehub.dto.UpdateCourseRequest;
 import com.upishanker.gradehub.dto.CourseResponse;
@@ -23,6 +25,8 @@ public class CourseService {
     private CourseRepository courseRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     public CourseResponse createCourse(Long userId, CreateCourseRequest createRequest) {
         User user = userRepository.findById(userId)
@@ -105,21 +109,36 @@ public class CourseService {
         );
     }
     public BigDecimal calculateGrade(Long courseId){
-        BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalGrade = BigDecimal.ZERO;
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
+        List <Category> categories = categoryRepository.findByCourseId(course.getId());
+        for (Category category : categories) {
+            List<Assignment> categoryAssignments = category.getAssignments();
+            if (categoryAssignments.isEmpty()) continue;
+
+            BigDecimal subGrade = BigDecimal.ZERO;
+            int gradedCount = 0;
+
+            for (Assignment assignment : categoryAssignments) {
+                if (assignment.getGrade() != null) {
+                    subGrade = subGrade.add(assignment.getGrade());
+                    gradedCount++;
+                }
+            }
+
+            if (gradedCount > 0) {
+                BigDecimal average = subGrade.divide(BigDecimal.valueOf(gradedCount), 2, RoundingMode.HALF_UP);
+                totalGrade = totalGrade.add(average.multiply(category.getWeight().divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP)));
+            }
+        }
         List<Assignment> assignments = course.getAssignments();
         for (Assignment assignment : assignments) {
-            if (assignment.getGrade() != null && assignment.getWeight() != null) {
+            if (assignment.getGrade() != null && assignment.getWeight() != null && assignment.getCategory() == null) {
                 totalGrade = totalGrade.add(
                         assignment.getGrade().multiply(assignment.getWeight())
                 );
-                totalWeight = totalWeight.add(assignment.getWeight());
             }
-        }
-        if (totalWeight.compareTo(BigDecimal.ZERO) > 0) {
-            totalGrade = totalGrade.divide(totalWeight, 2, RoundingMode.HALF_UP);
         }
         return totalGrade;
     }

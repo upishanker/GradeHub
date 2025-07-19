@@ -1,8 +1,11 @@
 package com.upishanker.gradehub.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class Category {
@@ -14,12 +17,16 @@ public class Category {
     private Course course;
     private String name;
     private BigDecimal weight;
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Assignment> assignments = new ArrayList<>();
 
     public Category() {}
-    public Category(Course course, String name, BigDecimal weight) {
+    public Category(Course course, String name, BigDecimal weight, List<Assignment> assignments) {
         this.course = course;
         this.name = name;
         this.weight = weight;
+        this.assignments = assignments;
     }
     public long getId() {
             return id;
@@ -44,5 +51,11 @@ public class Category {
     }
     public void setWeight(BigDecimal weight) {
         this.weight = weight;
+    }
+    public List<Assignment> getAssignments() {
+        return assignments;
+    }
+    public void setAssignments(List<Assignment> assignments) {
+        this.assignments = assignments;
     }
 }
