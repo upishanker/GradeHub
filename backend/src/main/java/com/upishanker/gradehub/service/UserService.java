@@ -180,7 +180,7 @@ public class UserService {
             throw new IncorrectPasswordException("Invalid password");
         }
         else {
-            String code = codeService.generateAndStoreCode(user.getId(), email);
+            String code = codeService.generateAndStoreCode(user, email);
             try {
                 codeService.send2FACode(email, code);
             } catch (Exception e) {

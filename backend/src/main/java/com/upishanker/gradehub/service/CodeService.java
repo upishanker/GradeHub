@@ -36,13 +36,13 @@ public class CodeService {
         this.userRepository = userRepository;
     }
     @Transactional
-    public String generateAndStoreCode(Long userId, String email) {
+    public String generateAndStoreCode(User user, String email) {
         String code = String.valueOf(100000 + random.nextInt(90000));
 
-        repo.deleteByUserId(userId);
+        repo.deleteByUserId(user.getId());
 
         Code tfa = new Code();
-        tfa.setUserId(userId);
+        tfa.setUser(user);
         tfa.setCode(code);
         tfa.setExpiresAt(Instant.now().plus(5, ChronoUnit.MINUTES));
 
@@ -80,7 +80,7 @@ public class CodeService {
         Resend resend = new Resend(RESEND_API_KEY);
 
         CreateEmailOptions params = CreateEmailOptions.builder()
-                .from("GradeHub <onboarding@resend.dev>")
+                .from("GradeHub <noreply@mail.upishanker.com>")
                 .to(email)
                 .subject("Your 2FA code for GradeHub")
                 .html("Your code is: <strong>" + code + "</strong>")

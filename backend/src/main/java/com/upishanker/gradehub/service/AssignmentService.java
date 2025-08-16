@@ -1,13 +1,17 @@
 package com.upishanker.gradehub.service;
 
 import com.upishanker.gradehub.exceptions.AssignmentNotFoundException;
+import com.upishanker.gradehub.exceptions.CategoryNotFoundException;
 import com.upishanker.gradehub.exceptions.CourseNotFoundException;
+import org.springframework.security.access.AccessDeniedException;
 import com.upishanker.gradehub.model.Assignment;
+import com.upishanker.gradehub.model.Category;
 import com.upishanker.gradehub.model.Course;
 import com.upishanker.gradehub.repository.AssignmentRepository;
 import com.upishanker.gradehub.dto.CreateAssignmentRequest;
 import com.upishanker.gradehub.dto.UpdateAssignmentRequest;
 import com.upishanker.gradehub.repository.CourseRepository;
+import com.upishanker.gradehub.repository.CategoryRepository;
 import com.upishanker.gradehub.dto.AssignmentResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.spel.ast.Assign;
@@ -16,19 +20,38 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.ArrayList;
 import java.time.LocalDateTime;
-@Service
 
+@Service
 public class AssignmentService {
     @Autowired
     private AssignmentRepository assignmentRepository;
     @Autowired
     private CourseRepository courseRepository;
-    public AssignmentResponse createAssignment(CreateAssignmentRequest createRequest) {
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    public AssignmentResponse createAssignment(CreateAssignmentRequest createRequest, Long userId) {
         Course course = courseRepository.findById(createRequest.courseId())
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + createRequest.courseId()));
+
+        // Verify user owns the course before creating assignment
+        if (!course.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to create assignments in this course");
+        }
+
         Assignment assignment = new Assignment();
         assignment.setCourse(course);
-        assignment.setCategory(createRequest.category());
+        if (createRequest.categoryId() != null) {
+            Category category = categoryRepository.findById(createRequest.categoryId())
+                    .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + createRequest.categoryId()));
+
+            // Verify category belongs to the same course
+            if (!category.getCourse().getId().equals(createRequest.courseId())) {
+                throw new AccessDeniedException("Category does not belong to the specified course");
+            }
+
+            assignment.setCategory(category);
+        }
         assignment.setName(createRequest.name());
         assignment.setGrade(createRequest.grade());
         assignment.setWeight(createRequest.weight());
@@ -44,9 +67,16 @@ public class AssignmentService {
                 assignment.getDueDate()
         );
     }
-    public AssignmentResponse getAssignmentById(Long id) {
+
+    public AssignmentResponse getAssignmentById(Long id, Long userId) {
         Assignment assignment = assignmentRepository.findById(id)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment not found with ID: " + id));
+
+        // Verify user owns the course that contains this assignment
+        if (!assignment.getCourse().getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to access this assignment");
+        }
+
         return new AssignmentResponse(
                 assignment.getCourse().getId(),
                 assignment.getCategory() != null ? assignment.getCategory().getId() : null,
@@ -57,9 +87,16 @@ public class AssignmentService {
                 assignment.getDueDate()
         );
     }
-    public AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest updateRequest) {
+
+    public AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest updateRequest, Long userId) {
         Assignment assignment = assignmentRepository.findById(id)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment not found with ID: " + id));
+
+        // Check if user owns the course that contains this assignment
+        if (!assignment.getCourse().getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to update this assignment");
+        }
+
         if (updateRequest.getName() != null) {
             assignment.setName(updateRequest.getName());
         }
@@ -83,10 +120,28 @@ public class AssignmentService {
                 assignment.getDueDate()
         );
     }
-    public void deleteAssignment(Long id) {
+
+    public void deleteAssignment(Long id, Long userId) {
+        Assignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new AssignmentNotFoundException("Assignment not found with ID: " + id));
+
+        // Check if user owns the course that contains this assignment
+        if (!assignment.getCourse().getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to delete this assignment");
+        }
+
         assignmentRepository.deleteById(id);
     }
-    public List<AssignmentResponse> getAssignmentsByCourseId(Long courseId) {
+
+    public List<AssignmentResponse> getAssignmentsByCourseId(Long courseId, Long userId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
+
+        // Verify user owns the course
+        if (!course.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to access assignments for this course");
+        }
+
         return assignmentRepository.findByCourseId(courseId).stream()
                 .map(assignment -> new AssignmentResponse(
                         assignment.getCourse().getId(),
@@ -99,7 +154,16 @@ public class AssignmentService {
                 ))
                 .toList();
     }
-    public List<AssignmentResponse> getAssignmentsByNameAndCourseId(String name, Long courseId) {
+
+    public List<AssignmentResponse> getAssignmentsByNameAndCourseId(String name, Long courseId, Long userId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
+
+        // Verify user owns the course
+        if (!course.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to access assignments for this course");
+        }
+
         return assignmentRepository.findByNameAndCourseId(name, courseId).stream()
                 .map(assignment -> new AssignmentResponse(
                         assignment.getCourse().getId(),
@@ -112,7 +176,16 @@ public class AssignmentService {
                 ))
                 .toList();
     }
-    public List<AssignmentResponse> getUpcomingAssignments(Long courseId) {
+
+    public List<AssignmentResponse> getUpcomingAssignments(Long courseId, Long userId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
+
+        // Verify user owns the course
+        if (!course.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to access assignments for this course");
+        }
+
         List<Assignment> assignments = assignmentRepository.findByCourseId(courseId);
         List<AssignmentResponse> upcoming = new ArrayList<>();
         LocalDateTime current = LocalDateTime.now();
@@ -120,7 +193,7 @@ public class AssignmentService {
             if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current.plusDays(7))) {
                 upcoming.add(new AssignmentResponse(
                         assignment.getCourse().getId(),
-                        assignment.getCategory().getId(),
+                        assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                         assignment.getId(),
                         assignment.getName(),
                         assignment.getGrade(),
@@ -131,6 +204,7 @@ public class AssignmentService {
         }
         return upcoming;
     }
+
     public List<AssignmentResponse> getUpcomingUserAssignments(Long userId) {
         List<Course> courses = courseRepository.findByUserId(userId);
         List<AssignmentResponse> upcoming = new ArrayList<>();
@@ -140,7 +214,7 @@ public class AssignmentService {
                 if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current.plusDays(7))) {
                     upcoming.add(new AssignmentResponse(
                             assignment.getCourse().getId(),
-                            assignment.getCategory().getId(),
+                            assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                             assignment.getId(),
                             assignment.getName(),
                             assignment.getGrade(),
@@ -152,7 +226,16 @@ public class AssignmentService {
         }
         return upcoming;
     }
-    public List<AssignmentResponse> getOverdueAssignments(Long courseId) {
+
+    public List<AssignmentResponse> getOverdueAssignments(Long courseId, Long userId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
+
+        // Verify user owns the course
+        if (!course.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to access assignments for this course");
+        }
+
         List<Assignment> assignments = assignmentRepository.findByCourseId(courseId);
         List<AssignmentResponse> overdue = new ArrayList<>();
         LocalDateTime current = LocalDateTime.now();
@@ -160,7 +243,7 @@ public class AssignmentService {
             if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current)) {
                 overdue.add(new AssignmentResponse(
                         assignment.getCourse().getId(),
-                        assignment.getCategory().getId(),
+                        assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                         assignment.getId(),
                         assignment.getName(),
                         assignment.getGrade(),

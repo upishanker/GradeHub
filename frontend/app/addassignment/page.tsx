@@ -117,7 +117,7 @@ export default function AddAssignment() {
             grade: Number(result.data.grade),
             dueDate: result.data.dueDate,
             ...(useCategory
-                ? { category: result.data.category}
+                ? { categoryId: selectedCategory?.id}
                 : { weight: Number(result.data.weight) })
         };
 
@@ -221,6 +221,7 @@ export default function AddAssignment() {
                                                                     setFormValues(prev => ({
                                                                         ...prev,
                                                                         category: category.name,
+                                                                        categoryId: category.id,
                                                                     }));
                                                                     setErrors(prev => ({
                                                                         ...prev,

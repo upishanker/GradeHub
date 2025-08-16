@@ -10,7 +10,7 @@ import org.springframework.cglib.core.Local;
 public record CreateAssignmentRequest(
         Long courseId,
         @NotBlank @Size(max = 100) String name,
-        Category category,
+        Long categoryId,
         @Min(0) @Max(120) BigDecimal grade,
         @NotNull @Min(0) @Max(100) BigDecimal weight,
         LocalDateTime dueDate

@@ -13,6 +13,7 @@ import com.upishanker.gradehub.repository.CourseRepository;
 import com.upishanker.gradehub.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 
@@ -23,9 +24,12 @@ public class CategoryService {
     @Autowired
     private CourseRepository courseRepository;
 
-    public CategoryResponse createCategory(CreateCategoryRequest createCategoryRequest) {
+    public CategoryResponse createCategory(CreateCategoryRequest createCategoryRequest, Long userId) {
         Course course = courseRepository.findById(createCategoryRequest.courseId())
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + createCategoryRequest.courseId()));
+        if (!course.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to create assignments in this course");
+        }
         Category category = new Category();
         category.setCourse(course);
         category.setName(createCategoryRequest.name());
@@ -38,9 +42,12 @@ public class CategoryService {
             category.getWeight()
         );
     }
-    public CategoryResponse updateCategory(Long categoryId, UpdateCategoryRequest updateCategoryRequest) {
+    public CategoryResponse updateCategory(Long categoryId, UpdateCategoryRequest updateCategoryRequest, Long userId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + categoryId));
+        if (!category.getCourse().getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to create assignments in this course");
+        }
         if (updateCategoryRequest.getName() != null) {
             category.setName(updateCategoryRequest.getName());
         }
@@ -65,7 +72,12 @@ public class CategoryService {
                 ))
                 .toList();
     }
-    public void deleteCategory(Long categoryId) {
+    public void deleteCategory(Long categoryId, Long userId) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + categoryId));
+        if (!category.getCourse().getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to delete categories in this course");
+        }
         categoryRepository.deleteById(categoryId);
     }
 }

@@ -11,8 +11,9 @@ public class Code {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private String code;
@@ -24,8 +25,8 @@ public class Code {
     private Instant createdAt = Instant.now();
 
     public Code() {}
-    public Code(Long userId, String code, Instant expiresAt, Instant createdAt) {
-        this.userId = userId;
+    public Code(User user, String code, Instant expiresAt, Instant createdAt) {
+        this.user = user;
         this.code = code;
         this.expiresAt = expiresAt;
         this.createdAt = createdAt;
@@ -36,11 +37,11 @@ public class Code {
     public void setId(Long id) {
         this.id = id;
     }
-    public Long getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
     public String getCode() {
         return code;
