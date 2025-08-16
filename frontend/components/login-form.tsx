@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {router} from "next/client";
 import {useRouter} from "next/navigation";
 
 
@@ -33,8 +32,8 @@ export function LoginForm({
         return
       }
       const data = await response.json();
-      localStorage.setItem("token", data.token);
-      router.push("/dashboard");
+      localStorage.setItem('loginSessionId', data.loginSessionId);
+      router.push("/account/twofactor");
 
     } catch (error) {
       console.error(error)

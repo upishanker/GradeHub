@@ -2,20 +2,22 @@ package com.upishanker.gradehub.service;
 
 import com.upishanker.gradehub.config.JwtService;
 import com.upishanker.gradehub.dto.*;
-import com.upishanker.gradehub.exceptions.CourseNotFoundException;
+import com.upishanker.gradehub.exceptions.EmailTakenException;
 import com.upishanker.gradehub.exceptions.UserNotFoundException;
 import com.upishanker.gradehub.exceptions.UsernameTakenException;
 import com.upishanker.gradehub.exceptions.IncorrectPasswordException;
 import com.upishanker.gradehub.model.Course;
 import com.upishanker.gradehub.model.User;
 import com.upishanker.gradehub.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class UserService {
@@ -23,19 +25,29 @@ public class UserService {
     private final UserRepository userRepository;
     private final CourseService courseService;
     private final PasswordEncoder passwordEncoder;
+    private final CodeService codeService;
+    final Map<String, Long> tempLoginSessionStore = new ConcurrentHashMap<>();
 
     public UserService(JwtService jwtService,
                        UserRepository userRepository,
                        CourseService courseService,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       CodeService twoFactorService) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.courseService = courseService;
         this.passwordEncoder = passwordEncoder;
+        this.codeService = twoFactorService;
     }
 
     public UserResponse createUser(CreateUserRequest createRequest) {
         User user = new User();
+        if(userRepository.existsByUsername(createRequest.username())) {
+            throw new UsernameTakenException("Username '" + createRequest.username() + "' is already taken");
+        }
+        if(userRepository.existsByEmail(createRequest.email())) {
+            throw new EmailTakenException("Email '" + createRequest.email() + "' is already taken");
+        }
         user.setUsername(createRequest.username());
         user.setEmail(createRequest.email());
         user.setPassword(passwordEncoder.encode(createRequest.password()));
@@ -168,9 +180,22 @@ public class UserService {
             throw new IncorrectPasswordException("Invalid password");
         }
         else {
-            return jwtService.generateToken(user.getId(), user.getUsername());
+            String code = codeService.generateAndStoreCode(user.getId(), email);
+            try {
+                codeService.send2FACode(email, code);
+            } catch (Exception e) {
+                // Log the error but don't fail the login process
+                System.err.println("Failed to send 2FA code: " + e.getMessage());
+                // You might want to use a proper logger here
+                throw new RuntimeException("Failed to send 2FA code. Please try again.");
+            }
+            String loginSessionId = UUID.randomUUID().toString();
+            tempLoginSessionStore.put(loginSessionId, user.getId());
+            return loginSessionId;
         }
-
+    }
+    public String verifyCodeAndGenerateToken(String loginSessionId, String code) {
+        return codeService.verifyCode(loginSessionId, code, tempLoginSessionStore);
     }
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
@@ -183,5 +208,13 @@ public class UserService {
     }
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
+    }
+
+    public Long getUserIdFromSession(String loginSessionId) {
+        return tempLoginSessionStore.get(loginSessionId);
+    }
+
+    public void removeSession(String loginSessionId) {
+        tempLoginSessionStore.remove(loginSessionId);
     }
 }

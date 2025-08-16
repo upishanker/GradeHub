@@ -136,7 +136,7 @@ public class CourseService {
         for (Assignment assignment : assignments) {
             if (assignment.getGrade() != null && assignment.getWeight() != null && assignment.getCategory() == null) {
                 totalGrade = totalGrade.add(
-                        assignment.getGrade().multiply(assignment.getWeight())
+                        assignment.getGrade().multiply(assignment.getWeight().divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP))
                 );
             }
         }

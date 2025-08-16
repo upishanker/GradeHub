@@ -1,5 +1,6 @@
 package com.upishanker.gradehub.model;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -14,9 +15,11 @@ public class Assignment {
     private Course course;
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = true)
+    @Nullable
     private Category category;
     private String name;
     private BigDecimal grade;
+    @Nullable
     private BigDecimal weight;
     private LocalDateTime dueDate;
 

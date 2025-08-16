@@ -28,6 +28,7 @@ public class AssignmentService {
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + createRequest.courseId()));
         Assignment assignment = new Assignment();
         assignment.setCourse(course);
+        assignment.setCategory(createRequest.category());
         assignment.setName(createRequest.name());
         assignment.setGrade(createRequest.grade());
         assignment.setWeight(createRequest.weight());
@@ -35,6 +36,7 @@ public class AssignmentService {
         assignmentRepository.save(assignment);
         return new AssignmentResponse(
                 assignment.getCourse().getId(),
+                assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                 assignment.getId(),
                 assignment.getName(),
                 assignment.getGrade(),
@@ -47,6 +49,7 @@ public class AssignmentService {
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment not found with ID: " + id));
         return new AssignmentResponse(
                 assignment.getCourse().getId(),
+                assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                 assignment.getId(),
                 assignment.getName(),
                 assignment.getGrade(),
@@ -72,6 +75,7 @@ public class AssignmentService {
         assignmentRepository.save(assignment);
         return new AssignmentResponse(
                 assignment.getCourse().getId(),
+                assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                 assignment.getId(),
                 assignment.getName(),
                 assignment.getGrade(),
@@ -86,6 +90,7 @@ public class AssignmentService {
         return assignmentRepository.findByCourseId(courseId).stream()
                 .map(assignment -> new AssignmentResponse(
                         assignment.getCourse().getId(),
+                        assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                         assignment.getId(),
                         assignment.getName(),
                         assignment.getGrade(),
@@ -98,6 +103,7 @@ public class AssignmentService {
         return assignmentRepository.findByNameAndCourseId(name, courseId).stream()
                 .map(assignment -> new AssignmentResponse(
                         assignment.getCourse().getId(),
+                        assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                         assignment.getId(),
                         assignment.getName(),
                         assignment.getGrade(),
@@ -114,6 +120,7 @@ public class AssignmentService {
             if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current.plusDays(7))) {
                 upcoming.add(new AssignmentResponse(
                         assignment.getCourse().getId(),
+                        assignment.getCategory().getId(),
                         assignment.getId(),
                         assignment.getName(),
                         assignment.getGrade(),
@@ -133,6 +140,7 @@ public class AssignmentService {
                 if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current.plusDays(7))) {
                     upcoming.add(new AssignmentResponse(
                             assignment.getCourse().getId(),
+                            assignment.getCategory().getId(),
                             assignment.getId(),
                             assignment.getName(),
                             assignment.getGrade(),
@@ -152,6 +160,7 @@ public class AssignmentService {
             if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current)) {
                 overdue.add(new AssignmentResponse(
                         assignment.getCourse().getId(),
+                        assignment.getCategory().getId(),
                         assignment.getId(),
                         assignment.getName(),
                         assignment.getGrade(),

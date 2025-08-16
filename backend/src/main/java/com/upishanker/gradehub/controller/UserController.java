@@ -3,6 +3,7 @@ package com.upishanker.gradehub.controller;
 import com.upishanker.gradehub.dto.*;
 import com.upishanker.gradehub.model.User;
 import com.upishanker.gradehub.service.UserService;
+import com.upishanker.gradehub.service.CodeService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,20 +19,31 @@ import java.util.Map;
 public class UserController {
     @Autowired
     private final UserService userService;
+    @Autowired
+    private final CodeService codeService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, CodeService codeService) {
         this.userService = userService;
+        this.codeService = codeService;
     }
     @PostMapping("/signup")
     public UserResponse createUser(@Valid @RequestBody CreateUserRequest createRequest) {
         return userService.createUser(createRequest);
     }
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        String jwtToken = userService.login(request.email(), request.password());
-        return ResponseEntity.ok(new LoginResponse(jwtToken));
+    public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request) {
+        String loginSessionId = userService.login(request.email(), request.password());
+        return ResponseEntity.ok(Map.of("loginSessionId", loginSessionId));
     }
-
+    @PostMapping("/verify-2fa")
+    public ResponseEntity<?> verify2FA(@RequestBody Verify2FARequest req) {
+        try {
+            String jwt = userService.verifyCodeAndGenerateToken(req.loginSessionId(), req.code());
+            return ResponseEntity.ok(Map.of("token", jwt));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
     @GetMapping()
     public UserResponse getUser() {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
