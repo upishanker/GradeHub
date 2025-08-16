@@ -54,4 +54,4 @@ npm-debug.log
 # IDE configs
 .vscode/
 .idea/
-,env
+.env
