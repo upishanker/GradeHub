@@ -160,7 +160,12 @@ export default function Course() {
                                     </CardContent>
                                     <CardFooter className="flex justify-center">
                                         <Button variant="destructive" onClick={async () => {
-                                            await fetch('http://localhost:8080/api/categories/' + category.id, { method: 'DELETE' });
+                                            await fetch(`http://localhost:8080/api/categories/${category.id}`, {
+                                                method: 'DELETE',
+                                                headers: {
+                                                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                                                },
+                                            });
                                             mutate("http://localhost:8080/api/categories?courseId=" + search);
                                         }}>
                                             Delete
@@ -200,7 +205,12 @@ export default function Course() {
                                     </CardContent>
                                     <CardFooter className="flex justify-center">
                                         <Button variant="destructive" onClick={async () => {
-                                            await fetch('http://localhost:8080/api/assignments/' + assignment.id, { method: 'DELETE' });
+                                            await fetch(`http://localhost:8080/api/assignments/${assignment.id}`, {
+                                                method: 'DELETE',
+                                                headers: {
+                                                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                                                },
+                                            });
                                             mutate("http://localhost:8080/api/assignments?courseId=" + search);
                                         }}>
                                             Delete
@@ -220,8 +230,13 @@ export default function Course() {
             </div>
             <div className="flex justify-center">
                 <Button variant="destructive" onClick={() =>
-                fetch('http://localhost:8080/api/courses/' + search, { method: 'DELETE' })
-                    .then(() => router.push('/dashboard'))
+                    fetch(`http://localhost:8080/api/courses/${search}`, {
+                        method: 'DELETE',
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem('token')}`,
+                        },
+                    })
+                        .then(() => router.push('/dashboard'))
             }> Delete Course</Button>
             </div>
         </div>
