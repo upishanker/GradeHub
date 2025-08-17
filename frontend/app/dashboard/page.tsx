@@ -174,13 +174,16 @@ export default function Dashboard() {
                                             <h1>{assignment.name}</h1>
                                             <h1 className="text-zinc-500">{courseName}</h1>
                                         </div>
-                                        <h1>{new Date(assignment.dueDate).toLocaleString(undefined, {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                        })}</h1>
+                                        <div>
+                                            <h1>{new Date(assignment.dueDate).toLocaleString(undefined, {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })}</h1>
+                                            <h1 className="text-right">{assignment.grade}</h1>
+                                        </div>
                                     </div>
                                 </Card>
                             </CardContent>

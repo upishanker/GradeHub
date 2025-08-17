@@ -1,5 +1,6 @@
 package com.upishanker.gradehub.service;
 
+import com.upishanker.gradehub.dto.CategoryResponse;
 import com.upishanker.gradehub.exceptions.AssignmentNotFoundException;
 import com.upishanker.gradehub.exceptions.CategoryNotFoundException;
 import com.upishanker.gradehub.exceptions.CourseNotFoundException;
@@ -143,6 +144,24 @@ public class AssignmentService {
         }
 
         return assignmentRepository.findByCourseId(courseId).stream()
+                .map(assignment -> new AssignmentResponse(
+                        assignment.getCourse().getId(),
+                        assignment.getCategory() != null ? assignment.getCategory().getId() : null,
+                        assignment.getId(),
+                        assignment.getName(),
+                        assignment.getGrade(),
+                        assignment.getWeight(),
+                        assignment.getDueDate()
+                ))
+                .toList();
+    }
+    public List<AssignmentResponse> getAssignmentsByCategoryId(Long categoryId, Long userId) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + categoryId));
+        if (!category.getCourse().getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You don't have permission to access this category");
+        }
+        return assignmentRepository.findByCategoryId(categoryId).stream()
                 .map(assignment -> new AssignmentResponse(
                         assignment.getCourse().getId(),
                         assignment.getCategory() != null ? assignment.getCategory().getId() : null,

@@ -122,7 +122,7 @@ export default function AddCategory() {
                                 )}
                             </div>
                             <Button type="submit" className="w-full">
-                                Add Assignment
+                                Add Category
                             </Button>
                         </form>
                     </CardContent>

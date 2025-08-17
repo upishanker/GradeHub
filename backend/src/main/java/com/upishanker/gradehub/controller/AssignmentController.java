@@ -27,10 +27,15 @@ public class AssignmentController extends BaseController{
         Long userId = getCurrentUserId(request);
         return assignmentService.getAssignmentById(assignmentId, userId);
     }
-    @GetMapping()
-    public List<AssignmentResponse> getAssignmentsByCourseId(@RequestParam(name = "courseId") long courseId,  HttpServletRequest request) {
+    @GetMapping(params = "courseId")
+    public List<AssignmentResponse> getAssignmentsByCourseId(@RequestParam long courseId,  HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         return assignmentService.getAssignmentsByCourseId(courseId, userId);
+    }
+    @GetMapping(params = "categoryId")
+    public List<AssignmentResponse> getAssignmentsByCategoryId(@RequestParam long categoryId, HttpServletRequest request) {
+        Long userId = getCurrentUserId(request);
+        return assignmentService.getAssignmentsByCategoryId(categoryId, userId);
     }
     @GetMapping("/upcoming")
     public List<AssignmentResponse> getUpcomingAssignmentsByUserId(HttpServletRequest request) {
