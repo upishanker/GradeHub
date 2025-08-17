@@ -3,6 +3,8 @@ package com.upishanker.gradehub.controller;
 import com.upishanker.gradehub.config.JwtService;
 import com.upishanker.gradehub.dto.UpdateCourseRequest;
 import com.upishanker.gradehub.model.Course;
+import com.upishanker.gradehub.repository.AssignmentRepository;
+import com.upishanker.gradehub.repository.CategoryRepository;
 import com.upishanker.gradehub.service.CourseService;
 import com.upishanker.gradehub.dto.CreateCourseRequest;
 import com.upishanker.gradehub.dto.CourseResponse;
@@ -51,9 +53,8 @@ public class CourseController extends BaseController {
         return courseService.updateCourse(courseId, updateRequest, userId);
     }
     @DeleteMapping("/{courseId}")
-    public ResponseEntity<Void> deleteCourse(@PathVariable Long courseId, HttpServletRequest request) {
+    public void deleteCourse(@PathVariable long courseId, HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         courseService.deleteCourse(courseId, userId);
-        return ResponseEntity.noContent().build();
     }
 }

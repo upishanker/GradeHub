@@ -18,6 +18,7 @@ import { Plus } from "lucide-react"
 import useSWR from "swr";
 import {ThemeProvider} from "@/components/theme-provider";
 import {ModeToggle} from "@/components/ui/darkmodetoggle";
+import BlankState from "@/components/blank-state";
 
 const fetcher = async (url: string) => {
     const token = localStorage.getItem("token");
@@ -101,18 +102,18 @@ const toLetterGrade = (grade) => {
     return letterGrade;
 }
 export default function Dashboard() {
-    const { data: classes, error, isLoading } = useSWR("http://localhost:8080/api/courses?v=2", fetcher)
+    const { data: courses, error, isLoading } = useSWR("http://localhost:8080/api/courses?v=2", fetcher)
     if(error) {
         console.error("SWR Error:", error);
         return 'An error has occured'
     }
-    const { data: assignmentsData, assignmentError}  = useSWR("http://localhost:8080/api/assignments/upcoming", fetcher2);
+    const { data: assignmentsData, error: assignmentError}  = useSWR("http://localhost:8080/api/assignments/upcoming", fetcher2);
     const assignments = assignmentsData ?? [];
     if (assignmentError) {
         console.error(assignmentError);
         return 'An error has occurred';
     }
-    const { data: gpa, gpaError } = useSWR("http://localhost:8080/api/users/gpa", fetcher2);
+    const { data: gpa, error: gpaError } = useSWR("http://localhost:8080/api/users/gpa", fetcher2);
     if (gpaError) {
         return 'An error has occurred';
     }
@@ -128,14 +129,18 @@ export default function Dashboard() {
             },
         ],
     }
-
+    if(isLoading)  {
+        return 'Loading...';
+    }
+    if (!courses || courses.length === 0) {
+        return <div><BlankState></BlankState></div>;
+    }
     return (
         <>
-        <NavBar />
-            <h1 className="text-center text-5xl font-bold mt-25">Dashboard</h1>
+            <NavBar/><h1 className="text-center text-5xl font-bold mt-25">Dashboard</h1>
             <div className="flex justify-around items-center min-h-screen relative">
                 <div className="grid grid-cols-2 gap-5 w-1/3 auto-rows-fr">
-                    {classes?.map((course) => (
+                    {courses?.map((course) => (
                         <Card key={course.id}>
                             <CardHeader className="flex justify-between">
                                 <h1>{course.name}</h1>
@@ -146,7 +151,7 @@ export default function Dashboard() {
                             </CardContent>
                             <CardFooter className="flex justify-center">
                                 <Button asChild>
-                                    <Link href={"/course?id="+course.id}>
+                                    <Link href={"/course?id=" + course.id}>
                                         Go To Course
                                     </Link>
                                 </Button>
@@ -156,7 +161,7 @@ export default function Dashboard() {
                     <Button asChild className="h-50 rounded-0.5rem">
                         <Link href="/addcourse">
                             Add Course
-                            <Plus />
+                            <Plus/>
                         </Link>
                     </Button>
                 </div>
@@ -164,38 +169,50 @@ export default function Dashboard() {
                     <CardHeader className="text-2xl font-semibold text-center">
                         Upcoming Assignments
                     </CardHeader>
-                    {assignments?.map((assignment) => {
-                        const courseName = classes?.find(c => c.id === assignment.courseId)?.name ?? "Unknown Course";
-                        return (
-                            <CardContent key={`${assignment.courseId}-${assignment.id}`}>
-                                <Card className="h-25 w-85 mr-auto ml-auto -mb-2">
-                                    <div className="flex justify-around">
-                                        <div>
-                                            <h1>{assignment.name}</h1>
-                                            <h1 className="text-zinc-500">{courseName}</h1>
-                                        </div>
-                                        <div>
-                                            <h1>{new Date(assignment.dueDate).toLocaleString(undefined, {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}</h1>
-                                            <h1 className="text-right">{assignment.grade}</h1>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </CardContent>
-                        )
-                    })}
 
-                    <CardFooter>
+                    {(!assignments || assignments.length === 0) ? (
+                        <CardContent className="text-center text-zinc-500">
+                            No upcoming assignments 🎉
+                        </CardContent>
+                    ) : (
+                        assignments.map((assignment) => {
+                            const courseName =
+                                courses?.find((c) => c.id === assignment.courseId)?.name ??
+                                "Unknown Course";
 
-                    </CardFooter>
+                            return (
+                                <CardContent key={`${assignment.courseId}-${assignment.id}`}>
+                                    <Card className="h-25 w-85 mr-auto ml-auto -mb-2">
+                                        <div className="flex justify-around">
+                                            <div>
+                                                <h1>{assignment.name}</h1>
+                                                <h1 className="text-zinc-500">{courseName}</h1>
+                                            </div>
+                                            <div>
+                                                <h1>
+                                                    {new Date(assignment.dueDate).toLocaleString(undefined, {
+                                                        year: "numeric",
+                                                        month: "short",
+                                                        day: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </h1>
+                                                <h1 className="text-right">{assignment.grade}</h1>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                </CardContent>
+                            );
+                        })
+                    )}
+
+                    <CardFooter />
                 </Card>
                 <div>
-                    <Doughnut data={data} height={200} width={200} options={{ maintainAspectRatio: false, responsive: false, rotation: 180}} className="mr-auto ml-auto"/>
+                    <Doughnut data={data} height={200} width={200}
+                              options={{maintainAspectRatio: false, responsive: false, rotation: 180}}
+                              className="mr-auto ml-auto"/>
                     <h1 className="text-4xl text-center mt-5">GPA: {gpa}</h1>
                 </div>
             </div>

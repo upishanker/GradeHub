@@ -3,6 +3,7 @@ package com.upishanker.gradehub.service;
 import com.upishanker.gradehub.dto.CreateCourseRequest;
 import com.upishanker.gradehub.exceptions.CourseNotFoundException;
 import com.upishanker.gradehub.exceptions.UserNotFoundException;
+import com.upishanker.gradehub.repository.AssignmentRepository;
 import org.springframework.security.access.AccessDeniedException;
 import com.upishanker.gradehub.model.Category;
 import com.upishanker.gradehub.model.Course;
@@ -15,6 +16,7 @@ import com.upishanker.gradehub.dto.CourseResponse;
 import com.upishanker.gradehub.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.math.BigDecimal;
@@ -28,6 +30,8 @@ public class CourseService {
     private UserRepository userRepository;
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private AssignmentRepository assignmentRepository;
 
     public CourseResponse createCourse(Long userId, CreateCourseRequest createRequest) {
         User user = userRepository.findById(userId)
@@ -203,7 +207,7 @@ public class CourseService {
         }
         return totalGrade;
     }
-
+    @Transactional
     public void deleteCourse(Long id, Long userId) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + id));
@@ -213,6 +217,13 @@ public class CourseService {
             throw new AccessDeniedException("You don't have permission to delete this course");
         }
 
+        // Delete all assignments associated with this course first
+        assignmentRepository.deleteByCourseId(id);
+
+        // Delete all categories associated with this course
+        categoryRepository.deleteByCourseId(id);
+
+        // Now delete the course
         courseRepository.deleteById(id);
     }
 }

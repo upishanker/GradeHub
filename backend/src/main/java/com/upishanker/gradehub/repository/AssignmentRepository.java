@@ -8,4 +8,5 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     List<Assignment> findByCourseId(Long courseId);
     List<Assignment> findByNameAndCourseId(String name, Long courseId);
     List<Assignment> findByCategoryId(Long categoryId);
+    void deleteByCourseId(Long courseId);
 }

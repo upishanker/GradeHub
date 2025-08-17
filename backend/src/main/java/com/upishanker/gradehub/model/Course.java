@@ -20,7 +20,7 @@ public class Course {
     private String semester;
     private double creditHours;
     private BigDecimal grade;
-    @OneToMany(mappedBy = "course" , cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "course" , cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Assignment> assignments = new ArrayList<>();
 

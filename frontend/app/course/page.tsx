@@ -230,7 +230,7 @@ export default function Course() {
             </div>
             <div className="flex justify-center">
                 <Button variant="destructive" onClick={() =>
-                    fetch(`http://localhost:8080/api/courses/${search}`, {
+                    fetch(`http://localhost:8080/api/courses/${parseInt(search)}`, {
                         method: 'DELETE',
                         headers: {
                             Authorization: `Bearer ${localStorage.getItem('token')}`,
