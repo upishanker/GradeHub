@@ -1,50 +1,16 @@
 "use client"
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
+import {Card, CardContent, CardFooter, CardHeader,} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {NavBar} from "@/app/navbar/Navbar";
-import {useEffect, useState} from "react";
-import {Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import {ArcElement, Chart as ChartJS, Legend} from "chart.js";
 import {Doughnut} from "react-chartjs-2";
 import Link from "next/link";
-import { Plus } from "lucide-react"
+import {Plus} from "lucide-react"
 import useSWR from "swr";
-import {ThemeProvider} from "@/components/theme-provider";
-import {ModeToggle} from "@/components/ui/darkmodetoggle";
 import BlankState from "@/components/blank-state";
+import toLetterGrade from "@/utils/helpers"
+import courseAndGradeFetcher from "@/utils/fetchers"
 
-const fetcher = async (url: string) => {
-    const token = localStorage.getItem("token");
-    console.log("Fetching Courses");
-    const response = await fetch(url, {
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
-    if (!response.ok) throw new Error("Failed to fetch courses");
-    const courses = await response.json();
-
-    const coursesWithGrades = await Promise.all(
-        courses.map(async (course: any) => {
-            const gradeRes = await fetch(`http://localhost:8080/api/courses/${course.id}/grade`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            const grade = gradeRes.ok ? await gradeRes.json() : null;
-            console.log(course.id, grade);
-            return {...course, grade};
-        })
-    );
-    return coursesWithGrades;
-}
 const fetcher2 = async (url: string) => {
     const token = localStorage.getItem("token");
     const response = await fetch(url, {
@@ -61,48 +27,8 @@ const fetcher2 = async (url: string) => {
 
 ChartJS.register(ArcElement, Legend)
 
-const toLetterGrade = (grade) => {
-    let letterGrade = "N/A"
-    if (grade >= 92) {
-        letterGrade = "A"
-    }
-    else if (grade >= 90) {
-        letterGrade = "A-"
-    }
-    else if (grade >= 87) {
-        letterGrade = "B+"
-    }
-    else if (grade >= 82) {
-        letterGrade = "B"
-    }
-    else if (grade >= 80) {
-        letterGrade = "B-"
-    }
-    else if (grade >= 77) {
-        letterGrade = "C+"
-    }
-    else if (grade >= 72) {
-        letterGrade = "C"
-    }
-    else if (grade >= 70) {
-        letterGrade = "C-"
-    }
-    else if (grade >= 67) {
-        letterGrade = "D+"
-    }
-    else if (grade >= 62) {
-        letterGrade = "D"
-    }
-    else if (grade >= 60) {
-        letterGrade = "D-"
-    }
-    else if (grade < 60) {
-        letterGrade = "F"
-    }
-    return letterGrade;
-}
 export default function Dashboard() {
-    const { data: courses, error, isLoading } = useSWR("http://localhost:8080/api/courses?v=2", fetcher)
+    const { data: courses, error, isLoading } = useSWR("http://localhost:8080/api/courses?v=2", courseAndGradeFetcher)
     if(error) {
         console.error("SWR Error:", error);
         return 'An error has occured'
@@ -117,7 +43,7 @@ export default function Dashboard() {
     if (gpaError) {
         return 'An error has occurred';
     }
-    const data = {
+    const gpaData = {
         datasets: [
             {
                 data: [gpa, 4 - gpa],
@@ -209,11 +135,17 @@ export default function Dashboard() {
 
                     <CardFooter />
                 </Card>
-                <div>
-                    <Doughnut data={data} height={200} width={200}
-                              options={{maintainAspectRatio: false, responsive: false, rotation: 180}}
-                              className="mr-auto ml-auto"/>
+                <div className="flex flex-col">
+                    <Link href="/gpa"><Doughnut data={gpaData} height={200} width={200}
+                                                options={{maintainAspectRatio: false, responsive: false, rotation: 180}}
+                                                className="mr-auto ml-auto transition delay-150 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110 hover:cursor-pointer"
+                    /></Link>
                     <h1 className="text-4xl text-center mt-5">GPA: {gpa}</h1>
+                    <Button asChild className="mt-5">
+                        <Link href={"/gpa"}>
+                            GPA Details
+                        </Link>
+                    </Button>
                 </div>
             </div>
         </>

@@ -171,7 +171,6 @@ public class CourseService {
         return totalGrade;
     }
 
-    // Internal method for UserService - no auth check needed since it's called internally
     public BigDecimal calculateGrade(Long courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));

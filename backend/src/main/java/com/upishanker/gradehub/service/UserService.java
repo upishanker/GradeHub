@@ -120,7 +120,7 @@ public class UserService {
                     score = BigDecimal.valueOf(4.0);
                 }
                 else if(grade.compareTo(BigDecimal.valueOf(90)) >= 0) {
-                    score = BigDecimal.valueOf(3.7);
+                    score = BigDecimal.valueOf(3.75);
                 }
                 else if(grade.compareTo(BigDecimal.valueOf(87)) >= 0) {
                     score = BigDecimal.valueOf(3.3);
