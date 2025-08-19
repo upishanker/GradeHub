@@ -28,8 +28,8 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import {NavBar} from "@/app/navbar/Navbar";
+import { toNumberGrade } from "@/utils/helpers";
 
 const seasons = [
     { label: "Fall", value: "fall" },
@@ -44,12 +44,29 @@ const years = Array.from({ length: 10 }, (_, i) => {
     return { label: year.toString(), value: year.toString() };
 });
 
+const letterGrades = [
+    "A",
+    "A-",
+    "B+",
+    "B",
+    "B-",
+    "C+",
+    "C",
+    "C-",
+    "D+",
+    "D",
+    "D-",
+    "F"
+] as const;
 const formSchema = z.object({
     name: z.string().max(100, { message: 'Name must be less than 100 characters.' }),
-    goal: z.preprocess(
-        (val) => (val === '' ? undefined : Number(val)),
-        z.number().min(0, { message: 'Goal must be at least 0.' }).max(100, { message: 'Goal must be at most 100.' })
-    ),
+    goal: z.union([
+        z.string().refine((val) => letterGrades.includes(val as any), { message: 'Invalid letter grade.' }),
+        z.preprocess(
+            (val) => (val === '' ? undefined : Number(val)),
+            z.number().min(0, { message: 'Goal must be at least 0.' }).max(100, { message: 'Goal must be at most 100.' })
+        )
+    ]),
     season: z.string().min(1, { message: 'Please select a season.' }),
     year: z.string().min(1, { message: 'Please select a year.' }),
     creditHours: z.preprocess(
@@ -72,7 +89,7 @@ export default function SignupPage() {
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [seasonOpen, setSeasonOpen] = useState(false);
     const [yearOpen, setYearOpen] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date>();
+    const [goalOpen, setGoalOpen] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormValues({ ...formValues, [e.target.name]: e.target.value });
@@ -90,6 +107,11 @@ export default function SignupPage() {
         setErrors({ ...errors, year: '' });
         setYearOpen(false);
     };
+    const handleGoalSelect = (value: string) => {
+        setFormValues({ ...formValues, goal: value });
+        setErrors({ ...errors, goal: '' });
+        setGoalOpen(false);
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -109,10 +131,15 @@ export default function SignupPage() {
 
         // Combine season and year to create semester string
         const semester = `${result.data.season.charAt(0).toUpperCase() + result.data.season.slice(1)} ${result.data.year}`;
-
+        let finalGoal = result.data.goal;
+        if(typeof result.data.goal === 'string' && letterGrades.includes(result.data.goal as any)) {
+            finalGoal = toNumberGrade(result.data.goal);
+        } else {
+            finalGoal = Number(result.data.goal);
+        }
         const courseRequest = {
             name: result.data.name,
-            goal: Number(result.data.goal),
+            goal: Number(finalGoal),
             semester: semester,
             creditHours: Number(result.data.creditHours),
         };
@@ -164,16 +191,63 @@ export default function SignupPage() {
                                 )}
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 <Label htmlFor="goal">Goal Grade</Label>
-                                <Input
-                                    id="goal"
-                                    name="goal"
-                                    type="number"
-                                    placeholder="100"
-                                    value={formValues.goal}
-                                    onChange={handleChange}
-                                />
+                                <div className="flex justify-between items-center">
+                                    <Input
+                                        id="goal"
+                                        name="goal"
+                                        type="number"
+                                        placeholder="100"
+                                        value={formValues.goal}
+                                        className="w-20"
+                                        onChange={handleChange}
+                                    />
+                                    <h1>Or select a Letter Grade: </h1>
+                                    <Popover open={goalOpen} onOpenChange={setGoalOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={goalOpen}
+                                                className={cn(
+                                                    "justify-between",
+                                                    !formValues.goal && "text-muted-foreground"
+                                                )}
+                                            >
+                                                {formValues.goal
+                                                    ? letterGrades.find((goal) => goal === formValues.goal)
+                                                    : "Select"}
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-full p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search Letter..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No letter found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {letterGrades.map((goal) => (
+                                                            <CommandItem
+                                                                key={goal}
+                                                                value={goal}
+                                                                onSelect={() => handleGoalSelect(goal)}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        formValues.goal === goal ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {goal}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
                                 {errors.goal && (
                                     <p className="text-sm text-red-600">{errors.goal}</p>
                                 )}

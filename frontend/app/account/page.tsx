@@ -159,97 +159,99 @@ export default function Account() {
         <div>
             <NavBar />
             <h1 className="text-center text-4xl mt-20">Welcome, {data?.username}</h1>
-            <Card className="w-100 ml-4">
-                <CardHeader className="flex justify-between items-center">
-                    <p className="text-3xl">Account Information</p>
-                    <>
-                        {isEditing ? (
-                            <button onClick={handleSave}>
-                                <FaSave />
-                            </button>
-                        ) : (
-                            <button onClick={handleEditToggle}>
-                                <FaPencilAlt />
-                            </button>
-                        )}
-                    </>
-                </CardHeader>
-                <CardContent>
-                    <>
-                        {isEditing ? (
-                            <>
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-2xl">
-                                        Username:
-                                        <input
-                                            type="text"
-                                            value={username}
-                                            onChange={(e) => setUsername(e.target.value)}
-                                            className="border p-1 rounded w-full"
-                                        />
-                                    </label>
-                                    <label className="text-2xl">
-                                        Email:
-                                        <input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="border p-1 rounded w-full"
-                                        />
-                                    </label>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <p className="text-2xl">Username: {data?.username}</p>
-                                <p className="text-2xl">Email: {data?.email}</p>
-                            </>
-                        )}
-                    </>
-                </CardContent>
-            </Card>
-            <div className="flex items-center p-4">
-                <Card className="w-full max-w-md">
-                    <CardHeader>
-                        <CardTitle className="text-center text-2xl">Change Password</CardTitle>
+            <div className="mt-20 flex justify-around">
+                <Card className="w-100 ml-4">
+                    <CardHeader className="flex justify-between items-center">
+                        <p className="text-3xl">Account Information</p>
+                        <>
+                            {isEditing ? (
+                                <button onClick={handleSave}>
+                                    <FaSave />
+                                </button>
+                            ) : (
+                                <button onClick={handleEditToggle}>
+                                    <FaPencilAlt />
+                                </button>
+                            )}
+                        </>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-1">
-                                <Label htmlFor="currentPassword">Current Password</Label>
-                                <Input
-                                    id="currentPassword"
-                                    name="currentPassword"
-                                    placeholder="●●●●●●●●"
-                                    value={formValues.currentPassword}
-                                    onChange={handleChange}
-                                />
-                                {errors.currentPassword && (
-                                    <p className="text-sm text-red-600">{errors.currentPassword}</p>
-                                )}
-                            </div>
-
-                            <div className="space-y-1">
-                                <Label htmlFor="newPassword">New Password</Label>
-                                <Input
-                                    id="newPassword"
-                                    name="newPassword"
-                                    placeholder="●●●●●●●●"
-                                    value={formValues.newPassword}
-                                    onChange={handleChange}
-                                />
-                                {errors.newPassword && (
-                                    <p className="text-sm text-red-600">{errors.newPassword}</p>
-                                )}
-                            </div>
-                            <Button type="submit" className="w-full">
-                                Change Password
-                            </Button>
-                        </form>
+                        <>
+                            {isEditing ? (
+                                <>
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-2xl">
+                                            Username:
+                                            <input
+                                                type="text"
+                                                value={username}
+                                                onChange={(e) => setUsername(e.target.value)}
+                                                className="border p-1 rounded w-full"
+                                            />
+                                        </label>
+                                        <label className="text-2xl">
+                                            Email:
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                className="border p-1 rounded w-full"
+                                            />
+                                        </label>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-2xl">Username: {data?.username}</p>
+                                    <p className="text-2xl">Email: {data?.email}</p>
+                                </>
+                            )}
+                        </>
                     </CardContent>
                 </Card>
+                <div className="flex items-center p-4">
+                    <Card className="w-full max-w-md">
+                        <CardHeader>
+                            <CardTitle className="text-center text-2xl">Change Password</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="space-y-1">
+                                    <Label htmlFor="currentPassword">Current Password</Label>
+                                    <Input
+                                        id="currentPassword"
+                                        name="currentPassword"
+                                        placeholder="●●●●●●●●"
+                                        value={formValues.currentPassword}
+                                        onChange={handleChange}
+                                    />
+                                    {errors.currentPassword && (
+                                        <p className="text-sm text-red-600">{errors.currentPassword}</p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label htmlFor="newPassword">New Password</Label>
+                                    <Input
+                                        id="newPassword"
+                                        name="newPassword"
+                                        placeholder="●●●●●●●●"
+                                        value={formValues.newPassword}
+                                        onChange={handleChange}
+                                    />
+                                    {errors.newPassword && (
+                                        <p className="text-sm text-red-600">{errors.newPassword}</p>
+                                    )}
+                                </div>
+                                <Button type="submit" className="w-full">
+                                    Change Password
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-            <div className="flex justify-center"><Button variant="destructive" onClick={handleLogout}>
+            <div className="flex justify-center mt-20"><Button variant="destructive" onClick={handleLogout}>
                 Logout
             </Button></div>
         </div>

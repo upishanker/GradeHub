@@ -1,3 +1,4 @@
+
 const toLetterGrade = (grade: number) => {
     if (!grade) return "N/A";
     if (grade >= 92) return "A";
@@ -12,6 +13,21 @@ const toLetterGrade = (grade: number) => {
     if (grade >= 62) return "D";
     if (grade >= 60) return "D-";
     return "F";
+}
+const toNumberGrade = (grade: string) => {
+    if (!grade) return "N/A";
+    if (grade == 'A') return 92;
+    if (grade == 'A-') return 90;
+    if (grade == 'B+') return 87;
+    if (grade == 'B') return 82;
+    if (grade == 'B-') return 80;
+    if (grade == 'C+') return 77;
+    if (grade == 'C') return 72;
+    if (grade == 'C-') return 70;
+    if (grade == 'D+') return 67;
+    if (grade == 'D') return 62;
+    if (grade == 'D-') return 60;
+    return 0;
 }
 const gradeToGradePoints = (grade: number) => {
     if (!grade) return 0;
@@ -29,5 +45,7 @@ const gradeToGradePoints = (grade: number) => {
     return 0;
 }
 
+
 export default toLetterGrade;
+export { toNumberGrade} ;
 export { gradeToGradePoints };
