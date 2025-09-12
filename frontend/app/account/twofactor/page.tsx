@@ -40,10 +40,11 @@ export default function TwoFAPage() {
             router.push('/login');
         }
     }, [router]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (otp.length !== 6) {
-            setError("Please enter a 5-digit code");
+            setError("Please enter a 6-digit code");
             return;
         }
 
@@ -53,9 +54,7 @@ export default function TwoFAPage() {
         try {
             const response = await fetch('http://localhost:8080/api/users/verify-2fa', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     loginSessionId: loginSessionId,
                     code: otp
@@ -67,11 +66,11 @@ export default function TwoFAPage() {
             if (response.ok) {
                 // Store JWT token
                 localStorage.setItem('token', data.token);
-
                 // Redirect to dashboard
                 router.push('/dashboard');
             } else {
-                setError(data.error || 'Verification failed');
+                // Show a red error message below the OTP boxes
+                setError(data.error || 'The code you entered is incorrect.');
             }
         } catch (err) {
             setError('Network error. Please try again.');
@@ -89,8 +88,9 @@ export default function TwoFAPage() {
                         Enter the 6-digit code from your email.
                     </CardDescription>
                 </CardHeader>
+
                 <form onSubmit={handleSubmit}>
-                    <CardContent className="flex flex-col items-center gap-6">
+                    <CardContent className="flex flex-col items-center gap-4">
                         <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                             <InputOTPGroup>
                                 <InputOTPSlot index={0} />
@@ -101,10 +101,17 @@ export default function TwoFAPage() {
                                 <InputOTPSlot index={5} />
                             </InputOTPGroup>
                         </InputOTP>
+
+                        {error && (
+                            <p className="text-sm text-red-600 text-center">
+                                {error}
+                            </p>
+                        )}
                     </CardContent>
-                    <CardFooter className="flex justify-center mt-7">
-                        <Button type="submit" className="w-full">
-                            Verify
+
+                    <CardFooter className="flex justify-center mt-4">
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? "Verifying..." : "Verify"}
                         </Button>
                     </CardFooter>
                 </form>

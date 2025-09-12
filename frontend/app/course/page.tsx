@@ -191,17 +191,20 @@ export default function Course() {
                                     <CardHeader>
                                         <h1 className="text-center">{assignment.name}</h1>
                                         <div className="text-zinc-500 text-center">
-                                            {new Date(assignment.dueDate).toLocaleString(undefined, {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
+                                            {assignment.dueDate
+                                                ? new Date(assignment.dueDate).toLocaleString(undefined, {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                })
+                                                : 'No due date'}
                                         </div>
                                     </CardHeader>
                                     <CardContent>
                                         <h1 className="text-center">Grade: {assignment.grade ?? "N/A"}%</h1>
+                                        <h1 className="text-center">Weight: {assignment.weight ?? "N/A"}%</h1>
                                     </CardContent>
                                     <CardFooter className="flex justify-center">
                                         <Button variant="destructive" onClick={async () => {

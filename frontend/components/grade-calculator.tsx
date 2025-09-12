@@ -58,7 +58,7 @@ const GradeCalculator = ({ assignments }: { assignments: any[] }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Available Assignments */}
                     <div>
-                        <h4 className="text-lg font-semibold mb-3">Available Assignments</h4>
+                        <h4 className="text-lg font-semibold mb-3">Assignments</h4>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                             {assignments.map((assignment) => (
                                 <DraggableAssignment
