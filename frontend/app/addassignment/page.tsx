@@ -115,10 +115,8 @@ export default function AddAssignment() {
             courseId: search,
             name: result.data.name,
             ...(result.data.dueDate ? { dueDate: result.data.dueDate } : {}),
-            ...(useCategory
-                ? { categoryId: selectedCategory?.id }
-                : { weight: Number(result.data.weight) }),
-            grade: isGraded ? Number(result.data.grade) : null,
+            ...(useCategory ? { categoryId: selectedCategory?.id } : { weight: Number(result.data.weight) }),
+            ...(isGraded ? { grade: Number(result.data.grade) } : {}),
         };
 
         try {

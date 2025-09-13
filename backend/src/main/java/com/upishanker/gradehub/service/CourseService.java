@@ -139,72 +139,78 @@ public class CourseService {
             throw new AccessDeniedException("You don't have permission to access this course");
         }
 
-        BigDecimal totalGrade = BigDecimal.ZERO;
-        List<Category> categories = categoryRepository.findByCourseId(course.getId());
-        for (Category category : categories) {
-            List<Assignment> categoryAssignments = category.getAssignments();
-            if (categoryAssignments.isEmpty()) continue;
-
-            BigDecimal subGrade = BigDecimal.ZERO;
-            int gradedCount = 0;
-
-            for (Assignment assignment : categoryAssignments) {
-                if (assignment.getGrade() != null) {
-                    subGrade = subGrade.add(assignment.getGrade());
-                    gradedCount++;
-                }
-            }
-
-            if (gradedCount > 0) {
-                BigDecimal average = subGrade.divide(BigDecimal.valueOf(gradedCount), 2, RoundingMode.HALF_UP);
-                totalGrade = totalGrade.add(average.multiply(category.getWeight().divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP)));
-            }
-        }
-        List<Assignment> assignments = course.getAssignments();
-        for (Assignment assignment : assignments) {
-            if (assignment.getGrade() != null && assignment.getWeight() != null && assignment.getCategory() == null) {
-                totalGrade = totalGrade.add(
-                        assignment.getGrade().multiply(assignment.getWeight().divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP))
-                );
-            }
-        }
-        return totalGrade;
+        return calculateCourseGradeNormalized(course);
     }
 
     public BigDecimal calculateGrade(Long courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
 
-        BigDecimal totalGrade = BigDecimal.ZERO;
+        return calculateCourseGradeNormalized(course);
+    }
+
+    /**
+     * Computes course grade considering only graded work and normalizing by the sum of
+     * weights that actually contributed. If nothing is graded, returns 0.00.
+     */
+    private BigDecimal calculateCourseGradeNormalized(Course course) {
+        // Accumulators
+        BigDecimal weightedSum = BigDecimal.ZERO;      // sum of (componentScore * componentWeight)
+        BigDecimal effectiveWeightSum = BigDecimal.ZERO; // sum of componentWeight for components that contributed
+
+        // 1) Category-based assignments
         List<Category> categories = categoryRepository.findByCourseId(course.getId());
         for (Category category : categories) {
             List<Assignment> categoryAssignments = category.getAssignments();
-            if (categoryAssignments.isEmpty()) continue;
+            if (categoryAssignments == null || categoryAssignments.isEmpty()) continue;
 
-            BigDecimal subGrade = BigDecimal.ZERO;
+            BigDecimal subSum = BigDecimal.ZERO;
             int gradedCount = 0;
 
             for (Assignment assignment : categoryAssignments) {
                 if (assignment.getGrade() != null) {
-                    subGrade = subGrade.add(assignment.getGrade());
+                    subSum = subSum.add(assignment.getGrade());
                     gradedCount++;
                 }
             }
 
-            if (gradedCount > 0) {
-                BigDecimal average = subGrade.divide(BigDecimal.valueOf(gradedCount), 2, RoundingMode.HALF_UP);
-                totalGrade = totalGrade.add(average.multiply(category.getWeight().divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP)));
+            // Only count this category if it has at least one graded assignment AND has a weight
+            if (gradedCount > 0 && category.getWeight() != null) {
+                // Category average (0-100 scale assumed)
+                BigDecimal average = subSum.divide(BigDecimal.valueOf(gradedCount), 4, RoundingMode.HALF_UP);
+
+                // Category weight as a percentage value (e.g., 20 means 20%)
+                BigDecimal categoryWeightPct = category.getWeight(); // e.g., 20
+
+                // Contribute average * weightPct (keep consistent units)
+                weightedSum = weightedSum.add(average.multiply(categoryWeightPct));
+                effectiveWeightSum = effectiveWeightSum.add(categoryWeightPct);
             }
         }
+
+        // 2) Standalone assignments (no category)
         List<Assignment> assignments = course.getAssignments();
         for (Assignment assignment : assignments) {
-            if (assignment.getGrade() != null && assignment.getWeight() != null && assignment.getCategory() == null) {
-                totalGrade = totalGrade.add(
-                        assignment.getGrade().multiply(assignment.getWeight().divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP))
-                );
-            }
+            if (assignment.getCategory() != null) continue;         // not standalone
+            if (assignment.getGrade() == null) continue;            // ungraded
+            if (assignment.getWeight() == null) continue;           // no weight to apply
+
+            BigDecimal weightPct = assignment.getWeight();          // e.g., 20
+            // Contribute grade * weightPct
+            weightedSum = weightedSum.add(assignment.getGrade().multiply(weightPct));
+            effectiveWeightSum = effectiveWeightSum.add(weightPct);
         }
-        return totalGrade;
+
+        // If nothing graded, return 0.00
+        if (effectiveWeightSum.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+
+        // Normalize: (sum(score * weightPct)) / (sum(weightPct))
+        BigDecimal normalized = weightedSum.divide(effectiveWeightSum, 4, RoundingMode.HALF_UP);
+
+        // Return with 2-decimal scale
+        return normalized.setScale(2, RoundingMode.HALF_UP);
     }
     @Transactional
     public void deleteCourse(Long id, Long userId) {
