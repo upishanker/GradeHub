@@ -7,8 +7,10 @@ import com.upishanker.gradehub.exceptions.UserNotFoundException;
 import com.upishanker.gradehub.exceptions.UsernameTakenException;
 import com.upishanker.gradehub.exceptions.IncorrectPasswordException;
 import com.upishanker.gradehub.model.Course;
+import com.upishanker.gradehub.model.CourseGradeScale;
 import com.upishanker.gradehub.model.GradeScale;
 import com.upishanker.gradehub.model.User;
+import com.upishanker.gradehub.repository.CourseGradeScaleRepository;
 import com.upishanker.gradehub.repository.GradeScaleRepository;
 import com.upishanker.gradehub.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,18 +34,21 @@ public class UserService {
     private final CodeService codeService;
     @Autowired
     private GradeScaleRepository gradeScaleRepository;
+    @Autowired
+    private final CourseGradeScaleRepository courseGradeScaleRepository;
     final Map<String, Long> tempLoginSessionStore = new ConcurrentHashMap<>();
 
     public UserService(JwtService jwtService,
                        UserRepository userRepository,
                        CourseService courseService,
                        PasswordEncoder passwordEncoder,
-                       CodeService twoFactorService) {
+                       CodeService twoFactorService, CourseGradeScaleRepository courseGradeScaleRepository) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.courseService = courseService;
         this.passwordEncoder = passwordEncoder;
         this.codeService = twoFactorService;
+        this.courseGradeScaleRepository = courseGradeScaleRepository;
     }
 
     public UserResponse createUser(CreateUserRequest createRequest) {
@@ -113,29 +119,71 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
 
-        List<GradeScale> scales = gradeScaleRepository.findAllByOrderByMinPercentDesc();
+        // Fetch the user's letter->GPA mapping once (user-scoped)
+        // Replace with repo method that is user-scoped
+        List<GradeScale> userGpaRows = gradeScaleRepository.findAllByUserIdOrderByLetterAsc(userId);
 
         BigDecimal gradePoints = BigDecimal.ZERO;
         BigDecimal totalHours = BigDecimal.ZERO;
 
         for (Course course : user.getCourses()) {
-            if (course.getCreditHours() != 0.0) {
-                BigDecimal grade = courseService.calculateGrade(course.getId());
-                BigDecimal creditHours = BigDecimal.valueOf(course.getCreditHours());
+            double ch = course.getCreditHours();
+            if (ch == 0.0) continue;
 
-                for (GradeScale scale : scales) {
-                    if (grade.compareTo(BigDecimal.valueOf(scale.getMinPercent())) >= 0) {
-                        gradePoints = gradePoints.add(creditHours.multiply(BigDecimal.valueOf(scale.getGpaValue())));
-                        break;
-                    }
-                }
+            BigDecimal creditHours = BigDecimal.valueOf(ch);
+
+            // 1) Compute numeric percent for the course (0..100), normalized by effective weights
+            BigDecimal percent = courseService.calculateGrade(course.getId());
+
+            // 2) Map percent -> letter using the course's CourseGradeScale
+            String letter = mapPercentToLetterForCourse(course.getId(), percent);
+
+            // 3) Map letter -> GPA using the user's GradeScale
+            BigDecimal gpaValue = mapLetterToUserGpa(userId, letter, userGpaRows);
+
+            if (gpaValue != null) {
+                gradePoints = gradePoints.add(creditHours.multiply(gpaValue));
                 totalHours = totalHours.add(creditHours);
             }
         }
 
-        return totalHours.compareTo(BigDecimal.ZERO) > 0
-                ? gradePoints.divide(totalHours, 2, RoundingMode.HALF_EVEN)
-                : BigDecimal.ZERO;
+        if (totalHours.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_EVEN);
+        }
+        return gradePoints.divide(totalHours, 2, RoundingMode.HALF_EVEN);
+    }
+
+    /**
+     * Map a numeric percent (0..100) to a letter based on the course's CourseGradeScale.
+     * Returns null if no scale configured for the course.
+     */
+    private String mapPercentToLetterForCourse(Long courseId, BigDecimal percent) {
+        List<CourseGradeScale> scale = courseGradeScaleRepository.findByCourseId(courseId);
+        if (scale == null || scale.isEmpty() || percent == null) return null;
+
+        // Sort by minPercent desc and pick the first where p >= minPercent
+        scale.sort(Comparator.comparing(CourseGradeScale::getMinPercent).reversed());
+        double p = percent.doubleValue();
+        for (CourseGradeScale row : scale) {
+            if (p >= row.getMinPercent()) return row.getLetter();
+        }
+        // If nothing matched, return the lowest letter if present (minPercent 0), else null
+        return null;
+    }
+
+    /**
+     * Map a letter to the user's GPA value from the provided user-scoped rows.
+     * Returns null if no mapping exists or letter is null/empty.
+     */
+    private BigDecimal mapLetterToUserGpa(Long userId, String letter, List<GradeScale> userGpaRows) {
+        if (letter == null || letter.isBlank() || userGpaRows == null) return null;
+        for (GradeScale row : userGpaRows) {
+            if (letter.equalsIgnoreCase(row.getLetter())) {
+                Double val = row.getGpaValue();
+                return val != null ? BigDecimal.valueOf(val) : null;
+            }
+        }
+        return null;
     }
     public UserResponse changePassword(Long userId, ChangePasswordRequest changeRequest) {
         User user = userRepository.findById(userId)

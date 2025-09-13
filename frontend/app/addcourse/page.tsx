@@ -29,7 +29,8 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import {NavBar} from "@/app/navbar/Navbar";
-import { toNumberGrade } from "@/utils/helpers";
+import {toNumberGrade} from "@/utils/helpers";
+
 
 const seasons = [
     { label: "Fall", value: "fall" },
@@ -92,8 +93,14 @@ export default function SignupPage() {
     const [goalOpen, setGoalOpen] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormValues({ ...formValues, [e.target.name]: e.target.value });
-        setErrors({ ...errors, [e.target.name]: '' });
+        const { name, value } = e.target;
+        // Clear letter grade when typing in number input
+        if (name === 'goal' && e.target.type === 'number') {
+            setFormValues({ ...formValues, [name]: value });
+        } else {
+            setFormValues({ ...formValues, [name]: value });
+        }
+        setErrors({ ...errors, [name]: '' });
     };
 
     const handleSeasonSelect = (value: string) => {
@@ -131,16 +138,12 @@ export default function SignupPage() {
 
         // Combine season and year to create semester string
         const semester = `${result.data.season.charAt(0).toUpperCase() + result.data.season.slice(1)} ${result.data.year}`;
-        let finalGoal = result.data.goal;
-        if(typeof result.data.goal === 'string' && letterGrades.includes(result.data.goal as any)) {
-            finalGoal = toNumberGrade(result.data.goal);
-        } else {
-            finalGoal = Number(result.data.goal);
-        }
+
+        const finalGoal = toNumberGrade(result.data.goal as any /* string | number */);
         const courseRequest = {
             name: result.data.name,
-            goal: Number(finalGoal),
-            semester: semester,
+            goal: finalGoal,
+            semester,
             creditHours: Number(result.data.creditHours),
         };
 
@@ -199,7 +202,7 @@ export default function SignupPage() {
                                         name="goal"
                                         type="number"
                                         placeholder="100"
-                                        value={formValues.goal}
+                                        value={isNaN(Number(formValues.goal)) ? '' : formValues.goal}
                                         className="w-20"
                                         onChange={handleChange}
                                     />

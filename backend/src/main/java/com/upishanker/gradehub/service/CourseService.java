@@ -3,17 +3,11 @@ package com.upishanker.gradehub.service;
 import com.upishanker.gradehub.dto.CreateCourseRequest;
 import com.upishanker.gradehub.exceptions.CourseNotFoundException;
 import com.upishanker.gradehub.exceptions.UserNotFoundException;
-import com.upishanker.gradehub.repository.AssignmentRepository;
+import com.upishanker.gradehub.model.*;
+import com.upishanker.gradehub.repository.*;
 import org.springframework.security.access.AccessDeniedException;
-import com.upishanker.gradehub.model.Category;
-import com.upishanker.gradehub.model.Course;
-import com.upishanker.gradehub.model.Assignment;
-import com.upishanker.gradehub.model.User;
-import com.upishanker.gradehub.repository.CategoryRepository;
-import com.upishanker.gradehub.repository.CourseRepository;
 import com.upishanker.gradehub.dto.UpdateCourseRequest;
 import com.upishanker.gradehub.dto.CourseResponse;
-import com.upishanker.gradehub.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +26,8 @@ public class CourseService {
     private CategoryRepository categoryRepository;
     @Autowired
     private AssignmentRepository assignmentRepository;
-
+    @Autowired private CourseGradeScaleRepository courseGradeScaleRepository;
+    @Autowired private GradeScaleRepository gradeScaleRepository;
     public CourseResponse createCourse(Long userId, CreateCourseRequest createRequest) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
@@ -44,13 +39,24 @@ public class CourseService {
         course.setCreditHours(createRequest.creditHours());
 
         courseRepository.save(course);
+
+        // Create default course grade scales
+        List<CourseGradeScale> defaultScales = CourseGradeScale.createDefaultGradeScales(course);
+        courseGradeScaleRepository.saveAll(defaultScales);
+
+        // Calculate grade and letter grade
+        BigDecimal grade = calculateCourseGradeNormalized(course);
+        String letterGrade = mapPercentToLetter(course.getId(), grade);
+
         return new CourseResponse(
                 user.getId(),
                 course.getId(),
                 course.getName(),
                 course.getGoal(),
                 course.getSemester(),
-                course.getCreditHours()
+                course.getCreditHours(),
+                grade,
+                letterGrade
         );
     }
 
@@ -63,38 +69,57 @@ public class CourseService {
             throw new AccessDeniedException("You don't have permission to access this course");
         }
 
+        // Calculate grade and letter grade
+        BigDecimal grade = calculateCourseGradeNormalized(course);
+        String letterGrade = mapPercentToLetter(course.getId(), grade);
+
         return new CourseResponse(
                 course.getUser().getId(),
                 course.getId(),
                 course.getName(),
                 course.getGoal(),
                 course.getSemester(),
-                course.getCreditHours()
+                course.getCreditHours(),
+                grade,
+                letterGrade
         );
     }
 
     public List<CourseResponse> getCoursesByUserId(Long userId) {
         return courseRepository.findByUserId(userId).stream()
-                .map(course -> new CourseResponse(
-                        course.getUser().getId(),
-                        course.getId(),
-                        course.getName(),
-                        course.getGoal(),
-                        course.getSemester(),
-                        course.getCreditHours()
-                ))
+                .map(course -> {
+                    BigDecimal grade = calculateCourseGradeNormalized(course);
+                    String letterGrade = mapPercentToLetter(course.getId(), grade);
+                    return new CourseResponse(
+                            course.getUser().getId(),
+                            course.getId(),
+                            course.getName(),
+                            course.getGoal(),
+                            course.getSemester(),
+                            course.getCreditHours(),
+                            grade,
+                            letterGrade
+                    );
+                })
                 .toList();
     }
 
     public CourseResponse getCourseByNameAndUserId(String name, Long userId) {
         Course course = courseRepository.findByNameAndUserId(name, userId);
+
+        // Calculate grade and letter grade
+        BigDecimal grade = calculateCourseGradeNormalized(course);
+        String letterGrade = mapPercentToLetter(course.getId(), grade);
+
         return new CourseResponse(
                 course.getUser().getId(),
                 course.getId(),
                 course.getName(),
                 course.getGoal(),
                 course.getSemester(),
-                course.getCreditHours()
+                course.getCreditHours(),
+                grade,
+                letterGrade
         );
     }
 
@@ -120,13 +145,20 @@ public class CourseService {
             course.setCreditHours(updateRequest.getCreditHours());
         }
         courseRepository.save(course);
+
+        // Calculate grade and letter grade
+        BigDecimal grade = calculateCourseGradeNormalized(course);
+        String letterGrade = mapPercentToLetter(course.getId(), grade);
+
         return new CourseResponse(
                 course.getUser().getId(),
                 course.getId(),
                 course.getName(),
                 course.getGoal(),
                 course.getSemester(),
-                course.getCreditHours()
+                course.getCreditHours(),
+                grade,
+                letterGrade
         );
     }
 
@@ -155,7 +187,7 @@ public class CourseService {
      */
     private BigDecimal calculateCourseGradeNormalized(Course course) {
         // Accumulators
-        BigDecimal weightedSum = BigDecimal.ZERO;      // sum of (componentScore * componentWeight)
+        BigDecimal weightedSum = BigDecimal.ZERO;    // sum of (componentScore * componentWeight)
         BigDecimal effectiveWeightSum = BigDecimal.ZERO; // sum of componentWeight for components that contributed
 
         // 1) Category-based assignments
@@ -191,11 +223,11 @@ public class CourseService {
         // 2) Standalone assignments (no category)
         List<Assignment> assignments = course.getAssignments();
         for (Assignment assignment : assignments) {
-            if (assignment.getCategory() != null) continue;         // not standalone
-            if (assignment.getGrade() == null) continue;            // ungraded
-            if (assignment.getWeight() == null) continue;           // no weight to apply
+            if (assignment.getCategory() != null) continue;    // not standalone
+            if (assignment.getGrade() == null) continue;    // ungraded
+            if (assignment.getWeight() == null) continue;    // no weight to apply
 
-            BigDecimal weightPct = assignment.getWeight();          // e.g., 20
+            BigDecimal weightPct = assignment.getWeight();    // e.g., 20
             // Contribute grade * weightPct
             weightedSum = weightedSum.add(assignment.getGrade().multiply(weightPct));
             effectiveWeightSum = effectiveWeightSum.add(weightPct);
@@ -211,6 +243,26 @@ public class CourseService {
 
         // Return with 2-decimal scale
         return normalized.setScale(2, RoundingMode.HALF_UP);
+    }
+    public String mapPercentToLetter(Long courseId, BigDecimal percent) {
+        if (percent == null) return "No percent";
+
+        List<CourseGradeScale> rows = courseGradeScaleRepository.findByCourseId(courseId);
+        if (rows == null || rows.isEmpty()) return "No rows";
+
+        rows.sort(java.util.Comparator.comparing(CourseGradeScale::getMinPercent).reversed());
+        double p = percent.doubleValue();
+
+        for (CourseGradeScale r : rows) {
+            if (p >= r.getMinPercent()) return r.getLetter();
+        }
+        return "F";
+    }
+
+    public BigDecimal mapLetterToUserGpa(Long userId, String letter) {
+        if (letter == null) return null;
+        GradeScale gs = gradeScaleRepository.findByUserIdAndLetter(userId, letter);
+        return gs != null && gs.getGpaValue() != null ? BigDecimal.valueOf(gs.getGpaValue()) : null;
     }
     @Transactional
     public void deleteCourse(Long id, Long userId) {

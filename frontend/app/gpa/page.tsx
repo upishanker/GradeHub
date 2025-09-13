@@ -5,7 +5,7 @@ import {Doughnut} from "react-chartjs-2";
 import {NavBar} from "@/app/navbar/Navbar";
 import {Card, CardHeader, CardContent, CardFooter} from "@/components/ui/card";
 import courseAndGradeFetcher from "@/utils/fetchers"
-import toLetterGrade, { gradeToGradePoints } from "@/utils/helpers"
+
 
 const gpaFetcher = async (url: string) => {
     const token = localStorage.getItem("token");
@@ -40,9 +40,18 @@ export default function Gpa() {
             },
         ],
     }
+    // Helper function to convert letter grade to GPA points
+    const letterToGpaPoints = (letterGrade: string): number => {
+        const gradeMap: { [key: string]: number } = {
+            'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+            'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'D-': 0.7, 'F': 0.0
+        };
+        return gradeMap[letterGrade] || 0.0;
+    };
+
     const totals = courses?.reduce((acc, course) => {
-        if (course.creditHours && course.creditHours > 0) {
-            const gradePoints = gradeToGradePoints(course.grade);
+        if (course.creditHours && course.creditHours > 0 && course.letterGrade) {
+            const gradePoints = letterToGpaPoints(course.letterGrade);
             const totalGradePoints = gradePoints * course.creditHours;
             return {
                 totalGradePoints: acc.totalGradePoints + totalGradePoints,
@@ -57,7 +66,7 @@ export default function Gpa() {
             <div className="flex justify-around mt-50">
                 <div>
                     <Doughnut data={gpaData} height={200} width={200}
-                                  options={{maintainAspectRatio: false, responsive: false, rotation: 180}}
+                              options={{maintainAspectRatio: false, responsive: false, rotation: 180}}
                     />
                     <h1 className="text-4xl text-center mt-5">GPA: {gpa}</h1>
                 </div>
@@ -73,9 +82,9 @@ export default function Gpa() {
                                 <CardContent>
                                     <div className="flex justify-between">
                                         <h1>Credit Hours: {course.creditHours ?? "N/A"}</h1>
-                                        <h1>Grade: {toLetterGrade(course.grade)}</h1>
+                                        <h1>Grade: {course.letterGrade ?? "N/A"}</h1>
                                     </div>
-                                    <h1 className="mt-2 text-center">Grade Points: {(gradeToGradePoints(course.grade) * course.creditHours).toFixed(2)}</h1>
+                                    <h1 className="mt-2 text-center">Grade Points: {course.letterGrade ? (letterToGpaPoints(course.letterGrade) * course.creditHours).toFixed(2) : "N/A"}</h1>
                                 </CardContent>
                             </Card>
                         ))}

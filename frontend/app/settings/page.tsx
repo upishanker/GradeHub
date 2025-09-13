@@ -1,152 +1,402 @@
 "use client";
+import React, { useEffect, useState } from "react";
 import useSWR, { mutate } from "swr";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {NavBar} from "@/app/navbar/Navbar";
+import { NavBar } from "@/app/navbar/Navbar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
+// NEW: import helper sync functions
+import {
+    setUserGpaScale,
+    setCourseLetterPercentScale,
+} from "@/utils/helpers";
+
+type Course = {
+    id: number;
+    name: string;
+    semester?: string;
+};
+
+type CourseLetterRow = {
+    id?: number;
+    letter: string;
+    minPercent: number;
+};
+
+type UserGpaRow = {
+    id?: number;
+    letter: string;
+    gpaValue: number;
+};
 
 const fetcher = async (url: string) => {
     const token = localStorage.getItem("token");
     const response = await fetch(url, {
-        headers: {
-            "Authorization": `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
     });
-    if (!response.ok) {
-        throw new Error("Failed to fetch");
-    }
+    if (!response.ok) throw new Error("Failed to fetch");
     return await response.json();
 };
 
-type GradeScale = {
-    id?: number;
-    letter: string;
-    minPercent: number;
-    gpaValue: number;
-};
-
 export default function SettingsPage() {
-    const { data: scales, error, isLoading } = useSWR<GradeScale[]>(
+    const { data: courses } = useSWR<Course[]>(
+        "http://localhost:8080/api/courses",
+        fetcher
+    );
+
+    // User-level GPA scale (letter -> GPA)
+    const { data: gpaScale } = useSWR<UserGpaRow[]>(
         "http://localhost:8080/api/gradescale",
         fetcher
     );
 
-    const [localScales, setLocalScales] = useState<GradeScale[] | null>(null);
-
-    // if no local edits yet, use fetched data
-    const workingScales = localScales ?? scales ?? [];
-
-    const handleChange = (
-        index: number,
-        field: keyof GradeScale,
-        value: string
-    ) => {
-        const updated = [...workingScales];
-        if (field === "minPercent" || field === "gpaValue") {
-            updated[index][field] = parseFloat(value);
-        } else {
-            updated[index][field] = value;
+    // Keep helpers in sync when SWR GPA scale changes
+    useEffect(() => {
+        if (gpaScale) {
+            setUserGpaScale(gpaScale);
         }
-        setLocalScales(updated);
+    }, [gpaScale]);
+
+    // Local editable state for GPA scale
+    const [localGpa, setLocalGpa] = useState<UserGpaRow[] | null>(null);
+    const workingGpa = localGpa ?? gpaScale ?? [];
+
+    // Track expanded courses and their local editable letter scales
+    const [expandedCourseIds, setExpandedCourseIds] = useState<
+        Record<number, boolean>
+    >({});
+    const [courseScales, setCourseScales] = useState<
+        Record<number, CourseLetterRow[]>
+    >({});
+    const [courseScalesDirty, setCourseScalesDirty] = useState<
+        Record<number, boolean>
+    >({});
+
+    const toggleCourse = async (courseId: number) => {
+        const next = {
+            ...expandedCourseIds,
+            [courseId]: !expandedCourseIds[courseId],
+        };
+        setExpandedCourseIds(next);
+
+        // On expand, load scale if not loaded
+        if (!expandedCourseIds[courseId] && !courseScales[courseId]) {
+            const token = localStorage.getItem("token");
+            const res = await fetch(
+                `http://localhost:8080/api/courses/${courseId}/gradescale`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            const data: CourseLetterRow[] = res.ok ? await res.json() : [];
+            setCourseScales((prev) => ({ ...prev, [courseId]: data }));
+
+            // Sync helpers with fetched per-course scale
+            setCourseLetterPercentScale(courseId, data);
+        }
     };
 
-    const handleSave = async () => {
+    const updateCourseScaleField = (
+        courseId: number,
+        idx: number,
+        field: keyof CourseLetterRow,
+        value: string
+    ) => {
+        const current = courseScales[courseId] ?? [];
+        const updated = current.slice();
+        if (field === "minPercent") {
+            updated[idx][field] = parseFloat(value);
+        } else {
+            updated[idx][field] = value;
+        }
+        setCourseScales((prev) => ({ ...prev, [courseId]: updated }));
+        setCourseScalesDirty((prev) => ({ ...prev, [courseId]: true }));
+    };
+
+    const addCourseScaleRow = (courseId: number) => {
+        const current = courseScales[courseId] ?? [];
+        const updated = current.concat([{ letter: "", minPercent: 0 }]);
+        setCourseScales((prev) => ({ ...prev, [courseId]: updated }));
+        setCourseScalesDirty((prev) => ({ ...prev, [courseId]: true }));
+    };
+
+    const saveCourseScale = async (courseId: number) => {
         const token = localStorage.getItem("token");
-        await fetch("http://localhost:8080/api/gradescale", {
+        const rows = courseScales[courseId] ?? [];
+        const res = await fetch(
+            `http://localhost:8080/api/courses/${courseId}/gradescale`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(rows),
+            }
+        );
+        if (!res.ok) {
+            alert("Failed to save course scale");
+            return;
+        }
+
+        // Sync helpers immediately with the just-saved rows
+        setCourseLetterPercentScale(courseId, rows);
+
+        setCourseScalesDirty((prev) => ({ ...prev, [courseId]: false }));
+        alert("Course scale saved.");
+    };
+
+    const loadDefaultCourseScale = (courseId: number) => {
+        const defaults: CourseLetterRow[] = [
+            { letter: "A", minPercent: 92 },
+            { letter: "A-", minPercent: 90 },
+            { letter: "B+", minPercent: 87 },
+            { letter: "B", minPercent: 82 },
+            { letter: "B-", minPercent: 80 },
+            { letter: "C+", minPercent: 77 },
+            { letter: "C", minPercent: 72 },
+            { letter: "C-", minPercent: 70 },
+            { letter: "D+", minPercent: 67 },
+            { letter: "D", minPercent: 62 },
+            { letter: "D-", minPercent: 60 },
+            { letter: "F", minPercent: 0 },
+        ];
+        setCourseScales((prev) => ({ ...prev, [courseId]: defaults }));
+        setCourseScalesDirty((prev) => ({ ...prev, [courseId]: true }));
+
+        // Sync helpers immediately with defaults the user sees
+        setCourseLetterPercentScale(courseId, defaults);
+    };
+
+    // GPA scale handlers
+    const changeGpaField = (
+        idx: number,
+        field: keyof UserGpaRow,
+        value: string
+    ) => {
+        const working = workingGpa.slice();
+        if (field === "gpaValue") {
+            working[idx][field] = parseFloat(value);
+        } else {
+            working[idx][field] = value;
+        }
+        setLocalGpa(working);
+    };
+
+    const addGpaRow = () => {
+        const working = (localGpa ?? gpaScale ?? []).slice();
+        working.push({ letter: "", gpaValue: 0 });
+        setLocalGpa(working);
+    };
+
+    const saveGpaScale = async () => {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:8080/api/gradescale", {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(workingScales),
+            body: JSON.stringify(workingGpa),
         });
+        if (!res.ok) {
+            alert("Failed to save GPA scale");
+            return;
+        }
 
-        // reset local state & revalidate SWR cache
-        setLocalScales(null);
+        // Update helpers immediately with the just-saved values
+        setUserGpaScale(workingGpa);
+
+        setLocalGpa(null);
         mutate("http://localhost:8080/api/gradescale");
-        alert("Grading scale updated!");
+        alert("GPA scale saved!");
     };
-
-    if (isLoading) return <p>Loading grading scale…</p>;
-    if (error) return <p className="text-red-500">Failed to load scale</p>;
-
-    const isEmpty = !workingScales || workingScales.length === 0;
 
     return (
         <>
             <NavBar />
-            <div className="max-w-4xl mx-auto p-6">
-                <h1 className="text-3xl font-bold mb-6">Grading Scale Settings</h1>
+            <div className="max-w-5xl mx-auto p-6 space-y-10">
+                <h1 className="text-3xl font-bold">Grading Scale Settings</h1>
 
-                {isEmpty ? (
-                    <div className="text-zinc-500">
-                        No grading scale configured yet.
-                        <div className="mt-4">
-                            <Button
-                                onClick={() => {
-                                    const defaults = [
-                                        { letter: "A", minPercent: 92, gpaValue: 4.0 },
-                                        { letter: "A-", minPercent: 90, gpaValue: 3.75 },
-                                        { letter: "B+", minPercent: 87, gpaValue: 3.3},
-                                        { letter: "B", minPercent: 82, gpaValue: 3.0 },
-                                        { letter: "B-", minPercent: 80, gpaValue: 2.7},
-                                        { letter: "C+", minPercent: 77, gpaValue: 2.3},
-                                        { letter: "C", minPercent: 72, gpaValue: 2.0},
-                                        { letter: "C-", minPercent: 70, gpaValue: 1.7},
-                                        { letter: "D+", minPercent: 67, gpaValue: 1.3},
-                                        { letter: "D", minPercent: 62, gpaValue: 1.0 },
-                                        { letter: "D-", minPercent: 60, gpaValue: 0.7},
-                                        { letter: "F", minPercent: 0, gpaValue: 0.0 },
-                                    ] as GradeScale[];
-                                    setLocalScales(defaults);
-                                }}
-                            >
-                                Load Default Scale
-                            </Button>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <div className="space-y-4">
-                            {workingScales.map((scale, idx) => (
-                                <div key={idx} className="flex gap-4 items-center">
-                                    <input
-                                        type="text"
-                                        value={scale.letter}
-                                        onChange={(e) => handleChange(idx, "letter", e.target.value)}
-                                        className="border p-2 rounded w-16 text-center"
-                                    />
-                                    <input
-                                        type="number"
-                                        value={scale.minPercent}
-                                        onChange={(e) => handleChange(idx, "minPercent", e.target.value)}
-                                        className="border p-2 rounded w-24"
-                                    />
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={scale.gpaValue}
-                                        onChange={(e) => handleChange(idx, "gpaValue", e.target.value)}
-                                        className="border p-2 rounded w-24"
-                                    />
+                {/* Section: Per-course letter scales */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Per-Course Letter Scale (Percent → Letter)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {!courses || courses.length === 0 ? (
+                            <p className="text-zinc-500">No courses found.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                {courses.map((c) => {
+                                    const isOpen = !!expandedCourseIds[c.id];
+                                    const rows = courseScales[c.id];
+                                    return (
+                                        <div key={c.id} className="border rounded">
+                                            <button
+                                                className="w-full text-left px-4 py-3 flex justify-between items-center hover:bg-zinc-50"
+                                                onClick={() => toggleCourse(c.id)}
+                                            >
+                        <span className="font-medium">
+                          {c.name} {c.semester ? `· ${c.semester}` : ""}
+                        </span>
+                                                <span className="text-sm text-zinc-500">
+                          {isOpen ? "Hide" : "Edit"}
+                        </span>
+                                            </button>
+
+                                            {isOpen && (
+                                                <div className="px-4 pb-4 space-y-3">
+                                                    {!rows ? (
+                                                        <p className="text-zinc-500">Loading scale…</p>
+                                                    ) : rows.length === 0 ? (
+                                                        <div className="text-zinc-500">
+                                                            No scale configured for this course.
+                                                            <div className="mt-3">
+                                                                <Button
+                                                                    onClick={() => loadDefaultCourseScale(c.id)}
+                                                                >
+                                                                    Load Default Scale
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="space-y-2">
+                                                                {rows.map((row, idx) => (
+                                                                    <div
+                                                                        key={idx}
+                                                                        className="flex gap-3 items-center"
+                                                                    >
+                                                                        <Label className="w-28">Letter</Label>
+                                                                        <Input
+                                                                            className="w-28"
+                                                                            value={row.letter}
+                                                                            onChange={(e) =>
+                                                                                updateCourseScaleField(
+                                                                                    c.id,
+                                                                                    idx,
+                                                                                    "letter",
+                                                                                    e.target.value
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <Label className="w-36">Min %</Label>
+                                                                        <Input
+                                                                            type="number"
+                                                                            className="w-36"
+                                                                            value={row.minPercent}
+                                                                            onChange={(e) =>
+                                                                                updateCourseScaleField(
+                                                                                    c.id,
+                                                                                    idx,
+                                                                                    "minPercent",
+                                                                                    e.target.value
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            <div className="flex gap-3 mt-3">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    onClick={() => addCourseScaleRow(c.id)}
+                                                                >
+                                                                    Add Row
+                                                                </Button>
+                                                                <Button
+                                                                    onClick={() => saveCourseScale(c.id)}
+                                                                    disabled={!courseScalesDirty[c.id]}
+                                                                >
+                                                                    Save Course Scale
+                                                                </Button>
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    onClick={() => loadDefaultCourseScale(c.id)}
+                                                                >
+                                                                    Load Defaults
+                                                                </Button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Section: User GPA scale */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>User GPA Scale (Letter → GPA)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {!workingGpa || workingGpa.length === 0 ? (
+                            <div className="text-zinc-500">
+                                No GPA scale configured.
+                                <div className="mt-3">
+                                    <Button
+                                        onClick={() => {
+                                            const defaults: UserGpaRow[] = [
+                                                { letter: "A", gpaValue: 4.0 },
+                                                { letter: "A-", gpaValue: 3.7 },
+                                                { letter: "B+", gpaValue: 3.3 },
+                                                { letter: "B", gpaValue: 3.0 },
+                                                { letter: "B-", gpaValue: 2.7 },
+                                                { letter: "C+", gpaValue: 2.3 },
+                                                { letter: "C", gpaValue: 2.0 },
+                                                { letter: "C-", gpaValue: 1.7 },
+                                                { letter: "D+", gpaValue: 1.3 },
+                                                { letter: "D", gpaValue: 1.0 },
+                                                { letter: "D-", gpaValue: 0.7 },
+                                                { letter: "F", gpaValue: 0.0 },
+                                            ];
+                                            setLocalGpa(defaults);
+                                        }}
+                                    >
+                                        Load Default GPA Scale
+                                    </Button>
                                 </div>
-                            ))}
-                        </div>
-                        <Button
-                            className="mt-4"
-                            onClick={() => {
-                                const next = (localScales ?? scales ?? []).slice();
-                                next.push({ letter: "", minPercent: 0, gpaValue: 0 });
-                                setLocalScales(next);
-                            }}
-                        >
-                            Add Row
-                        </Button>
-                        <Button onClick={handleSave} className="mt-6">
-                            Save Changes
-                        </Button>
-                    </>
-                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="space-y-2">
+                                    {workingGpa.map((row, idx) => (
+                                        <div key={idx} className="flex gap-3 items-center">
+                                            <Label className="w-28">Letter</Label>
+                                            <Input
+                                                className="w-28"
+                                                value={row.letter}
+                                                onChange={(e) => changeGpaField(idx, "letter", e.target.value)}
+                                            />
+                                            <Label className="w-36">GPA</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.1"
+                                                className="w-36"
+                                                value={row.gpaValue}
+                                                onChange={(e) => changeGpaField(idx, "gpaValue", e.target.value)}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex gap-3 mt-3">
+                                    <Button variant="outline" onClick={addGpaRow}>
+                                        Add Row
+                                    </Button>
+                                    <Button onClick={saveGpaScale}>Save GPA Scale</Button>
+                                </div>
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </>
     );

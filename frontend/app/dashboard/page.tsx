@@ -8,10 +8,9 @@ import Link from "next/link";
 import {Plus} from "lucide-react"
 import useSWR from "swr";
 import BlankState from "@/components/blank-state";
-import {toLetterGrade} from "@/utils/helpers"
-import courseAndGradeFetcher from "@/utils/fetchers"
+// Removed courseAndGradeFetcher import - using simple fetcher instead
 
-const fetcher2 = async (url: string) => {
+const fetcher = async (url: string) => {
     const token = localStorage.getItem("token");
     const response = await fetch(url, {
         headers: {
@@ -28,18 +27,18 @@ const fetcher2 = async (url: string) => {
 ChartJS.register(ArcElement, Legend)
 
 export default function Dashboard() {
-    const { data: courses, error, isLoading } = useSWR("http://localhost:8080/api/courses?v=2", courseAndGradeFetcher)
+    const { data: courses, error, isLoading } = useSWR("http://localhost:8080/api/courses?v=2", fetcher)
     if(error) {
         console.error("SWR Error:", error);
         return 'An error has occured'
     }
-    const { data: assignmentsData, error: assignmentError}  = useSWR("http://localhost:8080/api/assignments/upcoming", fetcher2);
+    const { data: assignmentsData, error: assignmentError}  = useSWR("http://localhost:8080/api/assignments/upcoming", fetcher);
     const assignments = assignmentsData ?? [];
     if (assignmentError) {
         console.error(assignmentError);
         return 'An error has occurred';
     }
-    const { data: gpa, error: gpaError } = useSWR("http://localhost:8080/api/users/gpa", fetcher2);
+    const { data: gpa, error: gpaError } = useSWR("http://localhost:8080/api/users/gpa", fetcher);
     if (gpaError) {
         return 'An error has occurred';
     }
@@ -73,7 +72,7 @@ export default function Dashboard() {
                                 <div className="text-zinc-500">{course.semester}</div>
                             </CardHeader>
                             <CardContent className="flex justify-center">
-                                <h1>Grade: {course.grade ?? "N/A"}% ({toLetterGrade(course.grade)})</h1>
+                                <h1>Grade: {course.grade ?? "N/A"}% ({course.letterGrade ?? "N/A"})</h1>
                             </CardContent>
                             <CardFooter className="flex justify-center">
                                 <Button asChild>
