@@ -8,7 +8,7 @@ import Link from "next/link";
 import {Plus} from "lucide-react"
 import useSWR from "swr";
 import BlankState from "@/components/blank-state";
-import toLetterGrade from "@/utils/helpers"
+import {toLetterGrade} from "@/utils/helpers"
 import courseAndGradeFetcher from "@/utils/fetchers"
 
 const fetcher2 = async (url: string) => {

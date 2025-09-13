@@ -7,8 +7,11 @@ import com.upishanker.gradehub.exceptions.UserNotFoundException;
 import com.upishanker.gradehub.exceptions.UsernameTakenException;
 import com.upishanker.gradehub.exceptions.IncorrectPasswordException;
 import com.upishanker.gradehub.model.Course;
+import com.upishanker.gradehub.model.GradeScale;
 import com.upishanker.gradehub.model.User;
+import com.upishanker.gradehub.repository.GradeScaleRepository;
 import com.upishanker.gradehub.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +29,8 @@ public class UserService {
     private final CourseService courseService;
     private final PasswordEncoder passwordEncoder;
     private final CodeService codeService;
+    @Autowired
+    private GradeScaleRepository gradeScaleRepository;
     final Map<String, Long> tempLoginSessionStore = new ConcurrentHashMap<>();
 
     public UserService(JwtService jwtService,
@@ -107,55 +112,30 @@ public class UserService {
     public BigDecimal calculateGPA(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+        List<GradeScale> scales = gradeScaleRepository.findAllByOrderByMinPercentDesc();
+
         BigDecimal gradePoints = BigDecimal.ZERO;
         BigDecimal totalHours = BigDecimal.ZERO;
 
-        for  (Course course : user.getCourses()) {
+        for (Course course : user.getCourses()) {
             if (course.getCreditHours() != 0.0) {
                 BigDecimal grade = courseService.calculateGrade(course.getId());
                 BigDecimal creditHours = BigDecimal.valueOf(course.getCreditHours());
-                BigDecimal score = BigDecimal.ZERO;
+
+                for (GradeScale scale : scales) {
+                    if (grade.compareTo(BigDecimal.valueOf(scale.getMinPercent())) >= 0) {
+                        gradePoints = gradePoints.add(creditHours.multiply(BigDecimal.valueOf(scale.getGpaValue())));
+                        break;
+                    }
+                }
                 totalHours = totalHours.add(creditHours);
-                if(grade.compareTo(BigDecimal.valueOf(92)) >= 0) {
-                    score = BigDecimal.valueOf(4.0);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(90)) >= 0) {
-                    score = BigDecimal.valueOf(3.75);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(87)) >= 0) {
-                    score = BigDecimal.valueOf(3.3);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(82)) >= 0) {
-                    score = BigDecimal.valueOf(3.0);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(80)) >= 0) {
-                    score = BigDecimal.valueOf(2.7);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(77)) >= 0) {
-                    score = BigDecimal.valueOf(2.3);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(72)) >= 0) {
-                    score = BigDecimal.valueOf(2.0);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(70)) >= 0) {
-                    score = BigDecimal.valueOf(1.7);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(67)) >= 0) {
-                    score = BigDecimal.valueOf(1.3);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(62)) >= 0) {
-                    score = BigDecimal.valueOf(1.0);
-                }
-                else if(grade.compareTo(BigDecimal.valueOf(60)) >= 0) {
-                    score = BigDecimal.valueOf(0.7);
-                }
-                gradePoints = gradePoints.add(creditHours.multiply(score));
             }
         }
-        if(totalHours.compareTo(BigDecimal.ZERO) > 0) {
-            return gradePoints.divide(totalHours, RoundingMode.HALF_EVEN);
-        }
-        return BigDecimal.ZERO;
+
+        return totalHours.compareTo(BigDecimal.ZERO) > 0
+                ? gradePoints.divide(totalHours, 2, RoundingMode.HALF_EVEN)
+                : BigDecimal.ZERO;
     }
     public UserResponse changePassword(Long userId, ChangePasswordRequest changeRequest) {
         User user = userRepository.findById(userId)

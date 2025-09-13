@@ -46,6 +46,9 @@ export function NavBar() {
                         </NavigationMenuContent>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
+                        <NavigationMenuLink href="/settings">Settings</NavigationMenuLink>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
                         <NavigationMenuLink href="/account">Account</NavigationMenuLink>
                     </NavigationMenuItem>
                 </NavigationMenuList>

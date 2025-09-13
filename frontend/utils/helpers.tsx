@@ -1,51 +1,24 @@
+import {GradeScale} from "@/utils/types";
 
-const toLetterGrade = (grade: number) => {
+let gradeScale: GradeScale[] = [];
+
+export const setGradeScale = (newScale: GradeScale[]) => {
+    gradeScale = newScale;
+};
+
+export const toLetterGrade = (grade: number): string => {
     if (!grade) return "N/A";
-    if (grade >= 92) return "A";
-    if (grade >= 90) return "A-";
-    if (grade >= 87) return "B+";
-    if (grade >= 82) return "B";
-    if (grade >= 80) return "B-";
-    if (grade >= 77) return "C+";
-    if (grade >= 72) return "C";
-    if (grade >= 70) return "C-";
-    if (grade >= 67) return "D+";
-    if (grade >= 62) return "D";
-    if (grade >= 60) return "D-";
-    return "F";
-}
-const toNumberGrade = (grade: string) => {
-    if (!grade) return "N/A";
-    if (grade == 'A') return 92;
-    if (grade == 'A-') return 90;
-    if (grade == 'B+') return 87;
-    if (grade == 'B') return 82;
-    if (grade == 'B-') return 80;
-    if (grade == 'C+') return 77;
-    if (grade == 'C') return 72;
-    if (grade == 'C-') return 70;
-    if (grade == 'D+') return 67;
-    if (grade == 'D') return 62;
-    if (grade == 'D-') return 60;
-    return 0;
-}
-const gradeToGradePoints = (grade: number) => {
+    const match = gradeScale.find(s => grade >= s.minPercent);
+    return match ? match.letter : "N/A";
+};
+
+export const toNumberGrade = (letter: string): number => {
+    const match = gradeScale.find(s => s.letter === letter);
+    return match ? match.minPercent : 0;
+};
+
+export const gradeToGradePoints = (grade: number): number => {
     if (!grade) return 0;
-    if (grade >= 92) return 4.0;
-    if (grade >= 90) return 3.75;
-    if (grade >= 87) return 3.3;
-    if (grade >= 82) return 3.0;
-    if (grade >= 80) return 2.7;
-    if (grade >= 77) return 2.3;
-    if (grade >= 72) return 2.0;
-    if (grade >= 70) return 1.7;
-    if (grade >= 67) return 1.3;
-    if (grade >= 62) return 1.0;
-    if (grade >= 60) return 0.7;
-    return 0;
-}
-
-
-export default toLetterGrade;
-export { toNumberGrade} ;
-export { gradeToGradePoints };
+    const match = gradeScale.find(s => grade >= s.minPercent);
+    return match ? match.gpaValue : 0;
+};
