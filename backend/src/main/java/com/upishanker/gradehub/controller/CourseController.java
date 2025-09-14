@@ -9,6 +9,7 @@ import com.upishanker.gradehub.service.CourseService;
 import com.upishanker.gradehub.dto.CreateCourseRequest;
 import com.upishanker.gradehub.dto.CourseResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,7 +28,7 @@ public class CourseController extends BaseController {
         this.courseService = courseService;
     }
     @PostMapping
-    public CourseResponse createCourse(@RequestBody CreateCourseRequest createRequest, HttpServletRequest request) {
+    public CourseResponse createCourse(@Valid @RequestBody CreateCourseRequest createRequest, HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         return courseService.createCourse(userId, createRequest);
     }

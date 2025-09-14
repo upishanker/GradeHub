@@ -32,6 +32,7 @@ export default function Dashboard() {
         console.error("SWR Error:", error);
         return 'An error has occured'
     }
+    const {data: pastCourses, error: pastCourseError} = useSWR("http://localhost:8080/api/pastcourses", fetcher)
     const { data: assignmentsData, error: assignmentError}  = useSWR("http://localhost:8080/api/assignments/upcoming", fetcher);
     const assignments = assignmentsData ?? [];
     if (assignmentError) {
@@ -143,6 +144,44 @@ export default function Dashboard() {
                     <Button asChild className="mt-5">
                         <Link href={"/gpa"}>
                             GPA Details
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+            <div>
+                <h1 className="text-center text-3xl font-bold mb-3">Past Courses</h1>
+                {pastCourses?.map((pastCourse) => (
+                    <Card className="w-full max-w-xl mx-auto" key={pastCourse.id}>
+                        <CardHeader className="flex justify-between">
+                            <h1>{pastCourse.name}</h1>
+                            <div className="text-zinc-500">{pastCourse.semester}</div>
+                        </CardHeader>
+                        <CardContent className="flex justify-around">
+                            <h1>Credit Hours: {pastCourse.creditHours}</h1>
+                            <h1>Letter Grade: {pastCourse.letterGrade}</h1>
+                        </CardContent>
+                        <CardFooter>
+                            <Button
+                                className="mx-auto"
+                                variant="destructive"
+                                onClick={() =>
+                                    fetch(`http://localhost:8080/api/pastcourses/${parseInt(pastCourse.id)}`, {
+                                        method: 'DELETE',
+                                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                                    })
+                                }
+                            >
+                                Delete Course
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                ))}
+
+                <div className="w-full max-w-xl mx-auto mt-4 mb-30">
+                    <Button asChild className="w-full rounded-[0.5rem]">
+                        <Link href="/addpastcourse">
+                            Add Past Course
+                            <Plus />
                         </Link>
                     </Button>
                 </div>

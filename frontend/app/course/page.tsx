@@ -403,7 +403,7 @@ export default function Course() {
                 </Card>
             </div>
 
-            {/* Delete course at the very bottom, centered */}
+
             <div className="flex justify-center py-10">
                 <Button
                     variant="destructive"

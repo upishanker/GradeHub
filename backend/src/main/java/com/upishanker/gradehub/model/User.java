@@ -17,7 +17,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Course> courses = new ArrayList<>();
-
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<PastCourse> pastCourses = new ArrayList<>();
     public User() {}
     public User(String username, String email, String password) {
         this.username = username;
@@ -54,5 +56,11 @@ public class User {
     }
     public void setCourses(List<Course> courses) {
         this.courses = courses;
+    }
+    public List<PastCourse> getPastCourses() {
+        return pastCourses;
+    }
+    public void setPastCourses(List<PastCourse> pastCourses) {
+        this.pastCourses = pastCourses;
     }
 }

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { Check, ChevronsUpDown, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
     Card,
@@ -61,13 +60,7 @@ const letterGrades = [
 ] as const;
 const formSchema = z.object({
     name: z.string().max(100, { message: 'Name must be less than 100 characters.' }),
-    goal: z.union([
-        z.string().refine((val) => letterGrades.includes(val as any), { message: 'Invalid letter grade.' }),
-        z.preprocess(
-            (val) => (val === '' ? undefined : Number(val)),
-            z.number().min(0, { message: 'Goal must be at least 0.' }).max(100, { message: 'Goal must be at most 100.' })
-        )
-    ]),
+    letterGrade: z.string().refine((val) => letterGrades.includes(val as any), { message: 'Invalid letter grade.' }),
     season: z.string().min(1, { message: 'Please select a season.' }),
     year: z.string().min(1, { message: 'Please select a year.' }),
     creditHours: z.preprocess(
@@ -76,12 +69,12 @@ const formSchema = z.object({
     ),
 });
 
-export default function AddCourse() {
+export default function AddPastCourse() {
     const router = useRouter();
 
     const [formValues, setFormValues] = useState({
         name: '',
-        goal: '',
+        letterGrade: '',
         season: '',
         year: '',
         creditHours: '',
@@ -90,12 +83,12 @@ export default function AddCourse() {
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [seasonOpen, setSeasonOpen] = useState(false);
     const [yearOpen, setYearOpen] = useState(false);
-    const [goalOpen, setGoalOpen] = useState(false);
+    const [letterGradeOpen, setletterGradeOpen] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         // Clear letter grade when typing in number input
-        if (name === 'goal' && e.target.type === 'number') {
+        if (name === 'letterGrade' && e.target.type === 'number') {
             setFormValues({ ...formValues, [name]: value });
         } else {
             setFormValues({ ...formValues, [name]: value });
@@ -114,10 +107,10 @@ export default function AddCourse() {
         setErrors({ ...errors, year: '' });
         setYearOpen(false);
     };
-    const handleGoalSelect = (value: string) => {
-        setFormValues({ ...formValues, goal: value });
-        setErrors({ ...errors, goal: '' });
-        setGoalOpen(false);
+    const handleletterGradeSelect = (value: string) => {
+        setFormValues({ ...formValues, letterGrade: value });
+        setErrors({ ...errors, letterGrade: '' });
+        setletterGradeOpen(false);
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -136,19 +129,18 @@ export default function AddCourse() {
             return;
         }
 
-        // Combine season and year to create semester string
         const semester = `${result.data.season.charAt(0).toUpperCase() + result.data.season.slice(1)} ${result.data.year}`;
 
-        const finalGoal = toNumberGrade(result.data.goal as any /* string | number */);
+
         const courseRequest = {
             name: result.data.name,
-            goal: finalGoal,
+            letterGrade: result.data.letterGrade,
             semester,
             creditHours: Number(result.data.creditHours),
         };
 
         try {
-            const response = await fetch('http://localhost:8080/api/courses', {
+            const response = await fetch('http://localhost:8080/api/pastcourses', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -176,7 +168,7 @@ export default function AddCourse() {
             <div className="flex items-center justify-center min-h-screen p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
-                        <CardTitle className="text-center text-2xl">Add Course</CardTitle>
+                        <CardTitle className="text-center text-2xl">Add Past Course</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -195,31 +187,22 @@ export default function AddCourse() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="goal">Goal Grade</Label>
+                                <Label htmlFor="letterGrade">Letter Grade</Label>
                                 <div className="flex justify-between items-center">
-                                    <Input
-                                        id="goal"
-                                        name="goal"
-                                        type="number"
-                                        placeholder="100"
-                                        value={isNaN(Number(formValues.goal)) ? '' : formValues.goal}
-                                        className="w-20"
-                                        onChange={handleChange}
-                                    />
-                                    <h1>Or select a Letter Grade: </h1>
-                                    <Popover open={goalOpen} onOpenChange={setGoalOpen}>
+
+                                    <Popover open={letterGradeOpen} onOpenChange={setletterGradeOpen}>
                                         <PopoverTrigger asChild>
                                             <Button
                                                 variant="outline"
                                                 role="combobox"
-                                                aria-expanded={goalOpen}
+                                                aria-expanded={letterGradeOpen}
                                                 className={cn(
                                                     "justify-between",
-                                                    !formValues.goal && "text-muted-foreground"
+                                                    !formValues.letterGrade && "text-muted-foreground"
                                                 )}
                                             >
-                                                {formValues.goal
-                                                    ? letterGrades.find((goal) => goal === formValues.goal)
+                                                {formValues.letterGrade
+                                                    ? letterGrades.find((letterGrade) => letterGrade === formValues.letterGrade)
                                                     : "Select"}
                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
@@ -230,19 +213,19 @@ export default function AddCourse() {
                                                 <CommandList>
                                                     <CommandEmpty>No letter found.</CommandEmpty>
                                                     <CommandGroup>
-                                                        {letterGrades.map((goal) => (
+                                                        {letterGrades.map((letterGrade) => (
                                                             <CommandItem
-                                                                key={goal}
-                                                                value={goal}
-                                                                onSelect={() => handleGoalSelect(goal)}
+                                                                key={letterGrade}
+                                                                value={letterGrade}
+                                                                onSelect={() => handleletterGradeSelect(letterGrade)}
                                                             >
                                                                 <Check
                                                                     className={cn(
                                                                         "mr-2 h-4 w-4",
-                                                                        formValues.goal === goal ? "opacity-100" : "opacity-0"
+                                                                        formValues.letterGrade === letterGrade ? "opacity-100" : "opacity-0"
                                                                     )}
                                                                 />
-                                                                {goal}
+                                                                {letterGrade}
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>
@@ -251,8 +234,8 @@ export default function AddCourse() {
                                         </PopoverContent>
                                     </Popover>
                                 </div>
-                                {errors.goal && (
-                                    <p className="text-sm text-red-600">{errors.goal}</p>
+                                {errors.letterGrade && (
+                                    <p className="text-sm text-red-600">{errors.letterGrade}</p>
                                 )}
                             </div>
 
@@ -377,7 +360,7 @@ export default function AddCourse() {
                             </div>
 
                             <Button type="submit" className="w-full">
-                                Add Course
+                                Add Past Course
                             </Button>
                         </form>
                     </CardContent>

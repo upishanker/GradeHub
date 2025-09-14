@@ -6,10 +6,7 @@ import com.upishanker.gradehub.exceptions.EmailTakenException;
 import com.upishanker.gradehub.exceptions.UserNotFoundException;
 import com.upishanker.gradehub.exceptions.UsernameTakenException;
 import com.upishanker.gradehub.exceptions.IncorrectPasswordException;
-import com.upishanker.gradehub.model.Course;
-import com.upishanker.gradehub.model.CourseGradeScale;
-import com.upishanker.gradehub.model.GradeScale;
-import com.upishanker.gradehub.model.User;
+import com.upishanker.gradehub.model.*;
 import com.upishanker.gradehub.repository.CourseGradeScaleRepository;
 import com.upishanker.gradehub.repository.GradeScaleRepository;
 import com.upishanker.gradehub.repository.UserRepository;
@@ -119,8 +116,6 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
 
-        // Fetch the user's letter->GPA mapping once (user-scoped)
-        // Replace with repo method that is user-scoped
         List<GradeScale> userGpaRows = gradeScaleRepository.findAllByUserIdOrderByLetterAsc(userId);
 
         BigDecimal gradePoints = BigDecimal.ZERO;
@@ -146,17 +141,24 @@ public class UserService {
                 totalHours = totalHours.add(creditHours);
             }
         }
+        for (PastCourse pastCourse : user.getPastCourses()) {
+            double ch =  pastCourse.getCreditHours();
+            if (ch == 0.0) continue;
 
+            BigDecimal creditHours = BigDecimal.valueOf(ch);
+            BigDecimal gpaValue = mapLetterToUserGpa(userId, pastCourse.getLetterGrade(), userGpaRows);
+            if (gpaValue != null) {
+                gradePoints = gradePoints.add(creditHours.multiply(gpaValue));
+                totalHours = totalHours.add(creditHours);
+            }
+        }
         if (totalHours.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_EVEN);
         }
         return gradePoints.divide(totalHours, 2, RoundingMode.HALF_EVEN);
     }
 
-    /**
-     * Map a numeric percent (0..100) to a letter based on the course's CourseGradeScale.
-     * Returns null if no scale configured for the course.
-     */
+
     private String mapPercentToLetterForCourse(Long courseId, BigDecimal percent) {
         List<CourseGradeScale> scale = courseGradeScaleRepository.findByCourseId(courseId);
         if (scale == null || scale.isEmpty() || percent == null) return null;
@@ -171,10 +173,7 @@ public class UserService {
         return null;
     }
 
-    /**
-     * Map a letter to the user's GPA value from the provided user-scoped rows.
-     * Returns null if no mapping exists or letter is null/empty.
-     */
+
     private BigDecimal mapLetterToUserGpa(Long userId, String letter, List<GradeScale> userGpaRows) {
         if (letter == null || letter.isBlank() || userGpaRows == null) return null;
         for (GradeScale row : userGpaRows) {
