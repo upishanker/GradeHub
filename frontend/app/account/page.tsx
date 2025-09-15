@@ -100,10 +100,10 @@ export default function Account() {
             })
             if(!res.ok) {
                 console.error(await res.text());
-                alert("Failed to update");
+                toast.error("Failed to update");
                 return;
             }
-            alert("Profile update successfully!");
+            toast.error("Profile update successfully!");
             setIsEditing(false);
             mutate("http://localhost:8080/api/users")
         }
@@ -142,14 +142,14 @@ export default function Account() {
             })
             if (!response.ok) {
                 console.error(await response.text())
-                alert('Failed to change password')
+                toast.error('Failed to change password')
                 return
             }
-            alert('Password changed successfully')
+            toast.error('Password changed successfully')
 
         } catch (error) {
             console.error(error)
-            alert('An error occurred')
+            toast.error('An error occurred')
         }
     };
     const handleSetPassword = async (e: React.FormEvent) => {
@@ -169,10 +169,10 @@ export default function Account() {
         });
         if (!res.ok) {
             console.error(await res.text());
-            alert("Failed to set password");
+            toast.error("Failed to set password");
             return;
         }
-        alert("Password set successfully! You can now log in with email/password.");
+        toast.error("Password set successfully! You can now log in with email/password.");
         setFormValues(prev => ({ ...prev, newPassword: '' }));
         // Refresh user profile to reflect passwordSet = true
         mutate("http://localhost:8080/api/users");
@@ -185,7 +185,7 @@ export default function Account() {
         <div>
             <NavBar />
             <h1 className="text-center text-4xl mt-20">Welcome, {data?.username}</h1>
-            <div className="mt-20 flex justify-around">
+            <div className="mt-20 flex justify-center gap-30">
                 <Card className="w-100 ml-4">
                     <CardHeader className="flex justify-between items-center">
                         <p className="text-3xl">Account Information</p>

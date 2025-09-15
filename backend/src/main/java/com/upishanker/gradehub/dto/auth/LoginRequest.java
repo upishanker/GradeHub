@@ -1,5 +1,5 @@
-package com.upishanker.gradehub.dto;
-import jakarta.validation.constraints.*;
+package com.upishanker.gradehub.dto.auth;
+
 public record LoginRequest(
         String email,
         String password

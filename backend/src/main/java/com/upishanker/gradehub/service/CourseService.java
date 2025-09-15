@@ -1,13 +1,13 @@
 package com.upishanker.gradehub.service;
 
-import com.upishanker.gradehub.dto.CreateCourseRequest;
+import com.upishanker.gradehub.dto.course.CreateRequest;
 import com.upishanker.gradehub.exceptions.CourseNotFoundException;
 import com.upishanker.gradehub.exceptions.UserNotFoundException;
 import com.upishanker.gradehub.model.*;
 import com.upishanker.gradehub.repository.*;
 import org.springframework.security.access.AccessDeniedException;
-import com.upishanker.gradehub.dto.UpdateCourseRequest;
-import com.upishanker.gradehub.dto.CourseResponse;
+import com.upishanker.gradehub.dto.course.UpdateRequest;
+import com.upishanker.gradehub.dto.course.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +28,7 @@ public class CourseService {
     private AssignmentRepository assignmentRepository;
     @Autowired private CourseGradeScaleRepository courseGradeScaleRepository;
     @Autowired private GradeScaleRepository gradeScaleRepository;
-    public CourseResponse createCourse(Long userId, CreateCourseRequest createRequest) {
+    public Response createCourse(Long userId, CreateRequest createRequest) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
         Course course = new Course();
@@ -48,7 +48,7 @@ public class CourseService {
         BigDecimal grade = calculateCourseGradeNormalized(course);
         String letterGrade = mapPercentToLetter(course.getId(), grade);
 
-        return new CourseResponse(
+        return new Response(
                 user.getId(),
                 course.getId(),
                 course.getName(),
@@ -60,7 +60,7 @@ public class CourseService {
         );
     }
 
-    public CourseResponse getCourseById(Long id, Long userId) {
+    public Response getCourseById(Long id, Long userId) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + id));
 
@@ -73,7 +73,7 @@ public class CourseService {
         BigDecimal grade = calculateCourseGradeNormalized(course);
         String letterGrade = mapPercentToLetter(course.getId(), grade);
 
-        return new CourseResponse(
+        return new Response(
                 course.getUser().getId(),
                 course.getId(),
                 course.getName(),
@@ -85,12 +85,12 @@ public class CourseService {
         );
     }
 
-    public List<CourseResponse> getCoursesByUserId(Long userId) {
+    public List<Response> getCoursesByUserId(Long userId) {
         return courseRepository.findByUserId(userId).stream()
                 .map(course -> {
                     BigDecimal grade = calculateCourseGradeNormalized(course);
                     String letterGrade = mapPercentToLetter(course.getId(), grade);
-                    return new CourseResponse(
+                    return new Response(
                             course.getUser().getId(),
                             course.getId(),
                             course.getName(),
@@ -104,14 +104,14 @@ public class CourseService {
                 .toList();
     }
 
-    public CourseResponse getCourseByNameAndUserId(String name, Long userId) {
+    public Response getCourseByNameAndUserId(String name, Long userId) {
         Course course = courseRepository.findByNameAndUserId(name, userId);
 
         // Calculate grade and letter grade
         BigDecimal grade = calculateCourseGradeNormalized(course);
         String letterGrade = mapPercentToLetter(course.getId(), grade);
 
-        return new CourseResponse(
+        return new Response(
                 course.getUser().getId(),
                 course.getId(),
                 course.getName(),
@@ -123,7 +123,7 @@ public class CourseService {
         );
     }
 
-    public CourseResponse updateCourse(Long id, UpdateCourseRequest updateRequest, Long userId) {
+    public Response updateCourse(Long id, UpdateRequest updateRequest, Long userId) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + id));
 
@@ -150,7 +150,7 @@ public class CourseService {
         BigDecimal grade = calculateCourseGradeNormalized(course);
         String letterGrade = mapPercentToLetter(course.getId(), grade);
 
-        return new CourseResponse(
+        return new Response(
                 course.getUser().getId(),
                 course.getId(),
                 course.getName(),

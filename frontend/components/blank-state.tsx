@@ -18,12 +18,20 @@ export default function BlankState() {
                         It looks like you haven't added any courses yet. Try adding one!
                     </p>
                 </div>
-                <Button asChild className="rounded-0.5rem">
-                    <Link href="/addcourse">
-                        Add Course
-                        <Plus/>
-                    </Link>
-                </Button>
+                <div className="flex gap-5">
+                    <Button asChild className="rounded-0.5rem">
+                        <Link href="/addcourse">
+                            Add Current Course
+                            <Plus/>
+                        </Link>
+                    </Button>
+                    <Button asChild className="rounded-0.5rem">
+                        <Link href="/addpastcourse">
+                            Add Past Course
+                            <Plus/>
+                        </Link>
+                    </Button>
+                </div>
             </div>
         </>
     )

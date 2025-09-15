@@ -1,14 +1,12 @@
-package com.upishanker.gradehub.dto;
+package com.upishanker.gradehub.dto.assignment;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import com.upishanker.gradehub.model.Category;
 import jakarta.validation.constraints.*;
 import jakarta.annotation.Nullable;
-import org.springframework.cglib.core.Local;
 
-public record CreateAssignmentRequest(
+public record CreateRequest(
         Long courseId,
         @NotBlank @Size(max = 100) String name,
         @Nullable Long categoryId,

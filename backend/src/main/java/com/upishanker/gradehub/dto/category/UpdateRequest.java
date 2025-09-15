@@ -1,10 +1,10 @@
-package com.upishanker.gradehub.dto;
+package com.upishanker.gradehub.dto.category;
 
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 
-public class UpdateCategoryRequest {
+public class UpdateRequest {
     @NotBlank
     @Size(max = 100)
     private String name;
@@ -13,10 +13,10 @@ public class UpdateCategoryRequest {
     @Max(100)
     private BigDecimal weight;
 
-    public UpdateCategoryRequest() {
+    public UpdateRequest() {
     }
 
-    public UpdateCategoryRequest(String name, BigDecimal weight) {
+    public UpdateRequest(String name, BigDecimal weight) {
         this.name = name;
         this.weight = weight;
     }

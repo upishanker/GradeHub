@@ -59,14 +59,14 @@ export default function SignupPage() {
             })
             if (!response.ok) {
                 console.error(await response.text())
-                alert('Failed to create user')
+                toast.error('Failed to create user')
                 return
             }
-            alert('User created successfully')
+            toast.error('User created successfully')
             router.push('/account/login');
         } catch (error) {
             console.error(error)
-            alert('An error occurred')
+            toast.error('An error occurred')
         }
     };
 
@@ -74,7 +74,7 @@ export default function SignupPage() {
         try {
             const idToken = credentialResponse?.credential;
             if (!idToken) {
-                alert("Google sign up failed: missing credential");
+                toast.error("Google sign up failed: missing credential");
                 return;
             }
             // Same endpoint as login. Backend will upsert user and return JWT.
@@ -86,7 +86,7 @@ export default function SignupPage() {
             if (!resp.ok) {
                 const txt = await resp.text();
                 console.error(txt);
-                alert("Google sign-in failed");
+                toast.error("Google sign-in failed");
                 return;
             }
             const data = await resp.json();
@@ -94,12 +94,12 @@ export default function SignupPage() {
             router.push("/");
         } catch (e) {
             console.error(e);
-            alert("Google sign-in failed");
+            toast.error("Google sign-in failed");
         }
     };
 
     const handleGoogleError = () => {
-        alert("Google sign-in failed");
+        toast.error("Google sign-in failed");
     };
 
     return (

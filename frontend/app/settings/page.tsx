@@ -137,7 +137,7 @@ export default function SettingsPage() {
             }
         );
         if (!res.ok) {
-            alert("Failed to save course scale");
+            toast.error("Failed to save course scale");
             return;
         }
 
@@ -145,7 +145,7 @@ export default function SettingsPage() {
         setCourseLetterPercentScale(courseId, rows);
 
         setCourseScalesDirty((prev) => ({ ...prev, [courseId]: false }));
-        alert("Course scale saved.");
+        toast.error("Course scale saved.");
     };
 
     const loadDefaultCourseScale = (courseId: number) => {
@@ -202,7 +202,7 @@ export default function SettingsPage() {
             body: JSON.stringify(workingGpa),
         });
         if (!res.ok) {
-            alert("Failed to save GPA scale");
+            toast.error("Failed to save GPA scale");
             return;
         }
 
@@ -211,7 +211,7 @@ export default function SettingsPage() {
 
         setLocalGpa(null);
         mutate("http://localhost:8080/api/gradescale");
-        alert("GPA scale saved!");
+        toast.error("GPA scale saved!");
     };
 
     return (

@@ -130,14 +130,14 @@ export default function AddAssignment() {
             });
             if (!response.ok) {
                 console.error(await response.text());
-                alert('Failed to create assignment');
+                toast.error('Failed to create assignment');
                 return;
             }
-            alert('Assignment created successfully');
+            toast.error('Assignment created successfully');
             router.push('/course?id=' + search);
         } catch (error) {
             console.error(error);
-            alert('An error occurred');
+            toast.error('An error occurred');
         }
     };
 

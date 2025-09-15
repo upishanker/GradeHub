@@ -1,7 +1,7 @@
 package com.upishanker.gradehub.controller;
 
-import com.upishanker.gradehub.dto.CreatePastCourseRequest;
-import com.upishanker.gradehub.dto.PastCourseResponse;
+import com.upishanker.gradehub.dto.pastcourse.CreateRequest;
+import com.upishanker.gradehub.dto.pastcourse.Response;
 import com.upishanker.gradehub.exceptions.CourseNotFoundException;
 import com.upishanker.gradehub.exceptions.UserNotFoundException;
 import com.upishanker.gradehub.model.PastCourse;
@@ -25,21 +25,21 @@ public class PastCourseController extends BaseController {
         this.userRepository = userRepository;
     }
     @GetMapping
-    public List<PastCourseResponse> getPastCourses(HttpServletRequest request) {
+    public List<Response> getPastCourses(HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         return pcRepository.findByUserId(userId).stream()
-                .map(pc -> new PastCourseResponse(userId, pc.getId(), pc.getName(), pc.getSemester(), pc.getCreditHours(), pc.getLetterGrade()))
+                .map(pc -> new Response(userId, pc.getId(), pc.getName(), pc.getSemester(), pc.getCreditHours(), pc.getLetterGrade()))
                 .toList();
     }
     @GetMapping("/{pastCourseId}")
-    public PastCourseResponse getPastCourse(@PathVariable long pastCourseId, HttpServletRequest request) {
+    public Response getPastCourse(@PathVariable long pastCourseId, HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         PastCourse pastCourse = pcRepository.findById(pastCourseId)
                 .orElseThrow(() -> new CourseNotFoundException("Past course not found"));
         if (!pastCourse.getUser().getId().equals(userId)) {
             throw new AccessDeniedException("Forbidden");
         }
-        return new PastCourseResponse(
+        return new Response(
                 pastCourse.getUser().getId(),
                 pastCourse.getId(),
                 pastCourse.getName(),
@@ -49,7 +49,7 @@ public class PastCourseController extends BaseController {
         );
     }
     @PostMapping
-    public PastCourseResponse createPastCourse(@Valid @RequestBody CreatePastCourseRequest createRequest, HttpServletRequest request) {
+    public Response createPastCourse(@Valid @RequestBody CreateRequest createRequest, HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         User user =  userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
@@ -61,7 +61,7 @@ public class PastCourseController extends BaseController {
         pastCourse.setLetterGrade(createRequest.letterGrade());
         pcRepository.save(pastCourse);
 
-        return new PastCourseResponse(
+        return new Response(
                 user.getId(),
                 pastCourse.getId(),
                 pastCourse.getName(),

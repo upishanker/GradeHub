@@ -73,15 +73,15 @@ export default function AddCategory() {
             })
             if (!response.ok) {
                 console.error(await response.text())
-                alert('Failed to create category');
+                toast.error('Failed to create category');
                 return
             }
-            alert('Category created successfully')
+            toast.error('Category created successfully')
             router.push('/course?id=' + search);
 
         } catch (error) {
             console.error(error)
-            alert('An error occurred')
+            toast.error('An error occurred')
         }
     };
 

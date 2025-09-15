@@ -1,11 +1,11 @@
-package com.upishanker.gradehub.dto;
+package com.upishanker.gradehub.dto.assignment;
 
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class UpdateAssignmentRequest {
+public class UpdateRequest {
     @NotBlank
     @Size(max = 100)
     private String name;
@@ -19,8 +19,8 @@ public class UpdateAssignmentRequest {
     private BigDecimal weight;
     private LocalDateTime dueDate;
 
-    public UpdateAssignmentRequest() {}
-    public UpdateAssignmentRequest(String category, String name, BigDecimal grade, BigDecimal weight, LocalDateTime dueDate) {
+    public UpdateRequest() {}
+    public UpdateRequest(String category, String name, BigDecimal grade, BigDecimal weight, LocalDateTime dueDate) {
         this.category = category;
         this.name = name;
         this.grade = grade;

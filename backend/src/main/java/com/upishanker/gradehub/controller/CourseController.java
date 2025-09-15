@@ -1,18 +1,13 @@
 package com.upishanker.gradehub.controller;
 
 import com.upishanker.gradehub.config.JwtService;
-import com.upishanker.gradehub.dto.UpdateCourseRequest;
-import com.upishanker.gradehub.model.Course;
-import com.upishanker.gradehub.repository.AssignmentRepository;
-import com.upishanker.gradehub.repository.CategoryRepository;
+import com.upishanker.gradehub.dto.course.UpdateRequest;
 import com.upishanker.gradehub.service.CourseService;
-import com.upishanker.gradehub.dto.CreateCourseRequest;
-import com.upishanker.gradehub.dto.CourseResponse;
+import com.upishanker.gradehub.dto.course.CreateRequest;
+import com.upishanker.gradehub.dto.course.Response;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -28,17 +23,17 @@ public class CourseController extends BaseController {
         this.courseService = courseService;
     }
     @PostMapping
-    public CourseResponse createCourse(@Valid @RequestBody CreateCourseRequest createRequest, HttpServletRequest request) {
+    public Response createCourse(@Valid @RequestBody CreateRequest createRequest, HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         return courseService.createCourse(userId, createRequest);
     }
     @GetMapping("/{courseId}")
-    public CourseResponse getCourse(@PathVariable long courseId, HttpServletRequest request) {
+    public Response getCourse(@PathVariable long courseId, HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         return courseService.getCourseById(courseId, userId);
     }
     @GetMapping
-    public List<CourseResponse> getCourseByUserId(HttpServletRequest request) {
+    public List<Response> getCourseByUserId(HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         return courseService.getCoursesByUserId(userId);
     }
@@ -47,9 +42,9 @@ public class CourseController extends BaseController {
         return courseService.calculateGrade(courseId);
     }
     @PatchMapping("/{courseId}")
-    public CourseResponse updateCourse(@RequestBody UpdateCourseRequest updateRequest,
-                                       @PathVariable long courseId,
-                                       HttpServletRequest request) {
+    public Response updateCourse(@RequestBody UpdateRequest updateRequest,
+                                 @PathVariable long courseId,
+                                 HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         return courseService.updateCourse(courseId, updateRequest, userId);
     }

@@ -150,15 +150,15 @@ export default function AddPastCourse() {
             })
             if (!response.ok) {
                 console.error(await response.text())
-                alert('Failed to create course')
+                toast.error('Failed to create course')
                 return
             }
-            alert('Course created successfully')
+            toast.error('Course created successfully')
             router.push('/dashboard');
 
         } catch (error) {
             console.error(error)
-            alert('An error occurred')
+            toast.error('An error occurred')
         }
     };
 

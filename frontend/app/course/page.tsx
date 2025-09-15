@@ -9,6 +9,7 @@ import useSWR, {mutate} from "swr";
 import {useSearchParams, useRouter} from "next/navigation";
 import {FaPencilAlt, FaSave} from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 
 const fetcher = async (url: string) => {
     const token = localStorage.getItem("token");
@@ -91,10 +92,10 @@ export default function Course() {
             });
             if (!res.ok) {
                 console.error(await res.text());
-                alert("Failed to update");
+                toast.error("Failed to update");
                 return;
             }
-            alert("Course updated successfully!");
+            toast.error("Course updated successfully!");
             setIsEditing(false);
             mutate(`http://localhost:8080/api/courses/${search}`);
         } catch (err) {

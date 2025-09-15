@@ -1,8 +1,8 @@
-package com.upishanker.gradehub.dto;
+package com.upishanker.gradehub.dto.pastcourse;
 
 import jakarta.validation.constraints.*;
 
-public record CreatePastCourseRequest(
+public record CreateRequest(
     @NotBlank @Size(max = 100) String name,
     @NotBlank @Size(max = 50) String semester,
     @NotNull @Min(1) @Max(6) Double creditHours,

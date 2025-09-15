@@ -1,8 +1,8 @@
-package com.upishanker.gradehub.dto;
+package com.upishanker.gradehub.dto.category;
 
 import java.math.BigDecimal;
 
-public record CategoryResponse (
+public record Response(
     Long id,
     Long courseId,
     String name,

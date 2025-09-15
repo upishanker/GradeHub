@@ -1,7 +1,7 @@
-package com.upishanker.gradehub.dto;
+package com.upishanker.gradehub.dto.user;
 import jakarta.validation.constraints.*;
 
-public class UpdateUserRequest {
+public class UpdateRequest {
     @NotBlank
     @Size(min = 3, max = 20)
     private String username;
@@ -9,8 +9,8 @@ public class UpdateUserRequest {
     @Email
     private String email;
 
-    public UpdateUserRequest() {};
-    public UpdateUserRequest(String username, String email) {
+    public UpdateRequest() {};
+    public UpdateRequest(String username, String email) {
         this.username = username;
         this.email = email;
     }

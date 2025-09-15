@@ -1,7 +1,10 @@
 package com.upishanker.gradehub.service;
 
 import com.upishanker.gradehub.config.JwtService;
-import com.upishanker.gradehub.dto.*;
+import com.upishanker.gradehub.dto.auth.ChangePasswordRequest;
+import com.upishanker.gradehub.dto.user.CreateRequest;
+import com.upishanker.gradehub.dto.user.UpdateRequest;
+import com.upishanker.gradehub.dto.user.Response;
 import com.upishanker.gradehub.exceptions.EmailTakenException;
 import com.upishanker.gradehub.exceptions.UserNotFoundException;
 import com.upishanker.gradehub.exceptions.UsernameTakenException;
@@ -48,7 +51,7 @@ public class UserService {
         this.courseGradeScaleRepository = courseGradeScaleRepository;
     }
 
-    public UserResponse createUser(CreateUserRequest createRequest) {
+    public Response createUser(CreateRequest createRequest) {
         User user = new User();
         if(userRepository.existsByUsername(createRequest.username())) {
             throw new UsernameTakenException("Username '" + createRequest.username() + "' is already taken");
@@ -62,7 +65,7 @@ public class UserService {
         user.setProvider("LOCAL");
         user.setPasswordSet(true);
         userRepository.save(user);
-        return new UserResponse(
+        return new Response(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
@@ -70,10 +73,10 @@ public class UserService {
                 user.isPasswordSet()
         );
     }
-    public UserResponse getUserById(Long id) {
+    public Response getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
-        return new UserResponse(
+        return new Response(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
@@ -81,7 +84,7 @@ public class UserService {
                 user.isPasswordSet()
         );
     }
-    public UserResponse changeUsername(Long userId, String newUsername) {
+    public Response changeUsername(Long userId, String newUsername) {
         User currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
         boolean b = !userRepository.existsByUsername(newUsername);
@@ -92,7 +95,7 @@ public class UserService {
             throw new UsernameTakenException("Username '" + newUsername + "' taken");
         }
         userRepository.save(currentUser);
-        return new UserResponse(
+        return new Response(
                 currentUser.getId(),
                 currentUser.getUsername(),
                 currentUser.getEmail(),
@@ -100,7 +103,7 @@ public class UserService {
                 currentUser.isPasswordSet()
         );
     }
-    public UserResponse updateUser(Long userId, UpdateUserRequest updateRequest) {
+    public Response updateUser(Long userId, UpdateRequest updateRequest) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
         if(!user.getUsername().equals(updateRequest.getUsername()) &&
@@ -114,7 +117,7 @@ public class UserService {
             user.setEmail(updateRequest.getEmail());
         }
         userRepository.save(user);
-        return new UserResponse(
+        return new Response(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
@@ -194,7 +197,7 @@ public class UserService {
         }
         return null;
     }
-    public UserResponse changePassword(Long userId, ChangePasswordRequest changeRequest) {
+    public Response changePassword(Long userId, ChangePasswordRequest changeRequest) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
         if (!passwordEncoder.matches(changeRequest.currentPassword(), user.getPassword())) {
@@ -205,7 +208,7 @@ public class UserService {
         }
         user.setPassword(passwordEncoder.encode(changeRequest.newPassword()));
         userRepository.save(user);
-        return new UserResponse(
+        return new Response(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
@@ -236,7 +239,7 @@ public class UserService {
     public String verifyCodeAndGenerateToken(String loginSessionId, String code) {
         return codeService.verifyCode(loginSessionId, code, tempLoginSessionStore);
     }
-    public UserResponse setPasswordIfUnset(Long userId, String newPassword) {
+    public Response setPasswordIfUnset(Long userId, String newPassword) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
 
@@ -253,7 +256,7 @@ public class UserService {
         // but it's fine to keep provider="GOOGLE" and just indicate passwordSet=true.
         userRepository.save(user);
 
-        return new UserResponse(
+        return new Response(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
@@ -261,9 +264,9 @@ public class UserService {
                 user.isPasswordSet()
         );
     }
-    public List<UserResponse> getAllUsers() {
+    public List<Response> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(user -> new UserResponse(
+                .map(user -> new Response(
                         user.getId(),
                         user.getUsername(),
                         user.getEmail(),

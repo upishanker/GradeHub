@@ -1,7 +1,11 @@
 package com.upishanker.gradehub.controller;
 
-import com.upishanker.gradehub.dto.*;
-import com.upishanker.gradehub.model.User;
+import com.upishanker.gradehub.dto.auth.ChangePasswordRequest;
+import com.upishanker.gradehub.dto.auth.LoginRequest;
+import com.upishanker.gradehub.dto.auth.Verify2FARequest;
+import com.upishanker.gradehub.dto.user.CreateRequest;
+import com.upishanker.gradehub.dto.user.UpdateRequest;
+import com.upishanker.gradehub.dto.user.Response;
 import com.upishanker.gradehub.service.UserService;
 import com.upishanker.gradehub.service.CodeService;
 import jakarta.validation.Valid;
@@ -11,7 +15,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,7 +30,7 @@ public class UserController {
         this.codeService = codeService;
     }
     @PostMapping("/signup")
-    public UserResponse createUser(@Valid @RequestBody CreateUserRequest createRequest) {
+    public Response createUser(@Valid @RequestBody CreateRequest createRequest) {
         return userService.createUser(createRequest);
     }
     @PostMapping("/login")
@@ -45,7 +48,7 @@ public class UserController {
         }
     }
     @GetMapping()
-    public UserResponse getUser() {
+    public Response getUser() {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return userService.getUserById(userId);
     }
@@ -55,17 +58,17 @@ public class UserController {
         return userService.calculateGPA(userId);
     }
     @PatchMapping()
-    public UserResponse updateUser(@RequestBody UpdateUserRequest updateRequest) {
+    public Response updateUser(@RequestBody UpdateRequest updateRequest) {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return userService.updateUser(userId, updateRequest);
     }
     @PatchMapping("/password")
-    public UserResponse changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
+    public Response changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return userService.changePassword(userId, changePasswordRequest);
     }
     @PatchMapping("/password/set")
-    public UserResponse setPassword(@RequestBody Map<String, String> req) {
+    public Response setPassword(@RequestBody Map<String, String> req) {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String newPassword = req.get("newPassword");
         if (newPassword == null || newPassword.length() < 8) {

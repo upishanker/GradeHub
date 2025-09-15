@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/popover";
 import {NavBar} from "@/app/navbar/Navbar";
 import {toNumberGrade} from "@/utils/helpers";
+import toast from "react-hot-toast";
 
 
 const seasons = [
@@ -40,10 +41,11 @@ const seasons = [
 ] as const;
 
 const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 10 }, (_, i) => {
-    const year = currentYear + 5 - i;
+const years = Array.from({ length: 6 }, (_, i) => {
+    const year = currentYear + i;
     return { label: year.toString(), value: year.toString() };
 });
+
 
 const letterGrades = [
     "A",
@@ -158,15 +160,15 @@ export default function AddCourse() {
             })
             if (!response.ok) {
                 console.error(await response.text())
-                alert('Failed to create course')
+                toast.error('Failed to create course')
                 return
             }
-            alert('Course created successfully')
+            toast.error('Course created successfully')
             router.push('/dashboard');
 
         } catch (error) {
             console.error(error)
-            alert('An error occurred')
+            toast.error('An error occurred')
         }
     };
 

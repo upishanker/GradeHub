@@ -1,6 +1,5 @@
 package com.upishanker.gradehub.service;
 
-import com.upishanker.gradehub.dto.CategoryResponse;
 import com.upishanker.gradehub.exceptions.AssignmentNotFoundException;
 import com.upishanker.gradehub.exceptions.CategoryNotFoundException;
 import com.upishanker.gradehub.exceptions.CourseNotFoundException;
@@ -9,13 +8,12 @@ import com.upishanker.gradehub.model.Assignment;
 import com.upishanker.gradehub.model.Category;
 import com.upishanker.gradehub.model.Course;
 import com.upishanker.gradehub.repository.AssignmentRepository;
-import com.upishanker.gradehub.dto.CreateAssignmentRequest;
-import com.upishanker.gradehub.dto.UpdateAssignmentRequest;
+import com.upishanker.gradehub.dto.assignment.CreateRequest;
+import com.upishanker.gradehub.dto.assignment.UpdateRequest;
 import com.upishanker.gradehub.repository.CourseRepository;
 import com.upishanker.gradehub.repository.CategoryRepository;
-import com.upishanker.gradehub.dto.AssignmentResponse;
+import com.upishanker.gradehub.dto.assignment.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.expression.spel.ast.Assign;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,7 +29,7 @@ public class AssignmentService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    public AssignmentResponse createAssignment(CreateAssignmentRequest createRequest, Long userId) {
+    public Response createAssignment(CreateRequest createRequest, Long userId) {
         Course course = courseRepository.findById(createRequest.courseId())
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + createRequest.courseId()));
 
@@ -58,7 +56,7 @@ public class AssignmentService {
         assignment.setWeight(createRequest.weight());
         assignment.setDueDate(createRequest.dueDate());
         assignmentRepository.save(assignment);
-        return new AssignmentResponse(
+        return new Response(
                 assignment.getCourse().getId(),
                 assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                 assignment.getId(),
@@ -69,7 +67,7 @@ public class AssignmentService {
         );
     }
 
-    public AssignmentResponse getAssignmentById(Long id, Long userId) {
+    public Response getAssignmentById(Long id, Long userId) {
         Assignment assignment = assignmentRepository.findById(id)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment not found with ID: " + id));
 
@@ -78,7 +76,7 @@ public class AssignmentService {
             throw new AccessDeniedException("You don't have permission to access this assignment");
         }
 
-        return new AssignmentResponse(
+        return new Response(
                 assignment.getCourse().getId(),
                 assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                 assignment.getId(),
@@ -89,7 +87,7 @@ public class AssignmentService {
         );
     }
 
-    public AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest updateRequest, Long userId) {
+    public Response updateAssignment(Long id, UpdateRequest updateRequest, Long userId) {
         Assignment assignment = assignmentRepository.findById(id)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment not found with ID: " + id));
 
@@ -111,7 +109,7 @@ public class AssignmentService {
             assignment.setDueDate(updateRequest.getDueDate());
         }
         assignmentRepository.save(assignment);
-        return new AssignmentResponse(
+        return new Response(
                 assignment.getCourse().getId(),
                 assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                 assignment.getId(),
@@ -134,7 +132,7 @@ public class AssignmentService {
         assignmentRepository.deleteById(id);
     }
 
-    public List<AssignmentResponse> getAssignmentsByCourseId(Long courseId, Long userId) {
+    public List<Response> getAssignmentsByCourseId(Long courseId, Long userId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
 
@@ -144,7 +142,7 @@ public class AssignmentService {
         }
 
         return assignmentRepository.findByCourseId(courseId).stream()
-                .map(assignment -> new AssignmentResponse(
+                .map(assignment -> new Response(
                         assignment.getCourse().getId(),
                         assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                         assignment.getId(),
@@ -155,14 +153,14 @@ public class AssignmentService {
                 ))
                 .toList();
     }
-    public List<AssignmentResponse> getAssignmentsByCategoryId(Long categoryId, Long userId) {
+    public List<Response> getAssignmentsByCategoryId(Long categoryId, Long userId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + categoryId));
         if (!category.getCourse().getUser().getId().equals(userId)) {
             throw new AccessDeniedException("You don't have permission to access this category");
         }
         return assignmentRepository.findByCategoryId(categoryId).stream()
-                .map(assignment -> new AssignmentResponse(
+                .map(assignment -> new Response(
                         assignment.getCourse().getId(),
                         assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                         assignment.getId(),
@@ -174,7 +172,7 @@ public class AssignmentService {
                 .toList();
     }
 
-    public List<AssignmentResponse> getAssignmentsByNameAndCourseId(String name, Long courseId, Long userId) {
+    public List<Response> getAssignmentsByNameAndCourseId(String name, Long courseId, Long userId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
 
@@ -184,7 +182,7 @@ public class AssignmentService {
         }
 
         return assignmentRepository.findByNameAndCourseId(name, courseId).stream()
-                .map(assignment -> new AssignmentResponse(
+                .map(assignment -> new Response(
                         assignment.getCourse().getId(),
                         assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                         assignment.getId(),
@@ -196,7 +194,7 @@ public class AssignmentService {
                 .toList();
     }
 
-    public List<AssignmentResponse> getUpcomingAssignments(Long courseId, Long userId) {
+    public List<Response> getUpcomingAssignments(Long courseId, Long userId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
 
@@ -206,11 +204,11 @@ public class AssignmentService {
         }
 
         List<Assignment> assignments = assignmentRepository.findByCourseId(courseId);
-        List<AssignmentResponse> upcoming = new ArrayList<>();
+        List<Response> upcoming = new ArrayList<>();
         LocalDateTime current = LocalDateTime.now();
         for (Assignment assignment : assignments) {
             if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current.plusDays(7))) {
-                upcoming.add(new AssignmentResponse(
+                upcoming.add(new Response(
                         assignment.getCourse().getId(),
                         assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                         assignment.getId(),
@@ -224,14 +222,14 @@ public class AssignmentService {
         return upcoming;
     }
 
-    public List<AssignmentResponse> getUpcomingUserAssignments(Long userId) {
+    public List<Response> getUpcomingUserAssignments(Long userId) {
         List<Course> courses = courseRepository.findByUserId(userId);
-        List<AssignmentResponse> upcoming = new ArrayList<>();
+        List<Response> upcoming = new ArrayList<>();
         LocalDateTime current = LocalDateTime.now();
         for (Course course : courses) {
             for (Assignment assignment : course.getAssignments()) {
                 if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current.plusDays(7))) {
-                    upcoming.add(new AssignmentResponse(
+                    upcoming.add(new Response(
                             assignment.getCourse().getId(),
                             assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                             assignment.getId(),
@@ -246,7 +244,7 @@ public class AssignmentService {
         return upcoming;
     }
 
-    public List<AssignmentResponse> getOverdueAssignments(Long courseId, Long userId) {
+    public List<Response> getOverdueAssignments(Long courseId, Long userId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
 
@@ -256,11 +254,11 @@ public class AssignmentService {
         }
 
         List<Assignment> assignments = assignmentRepository.findByCourseId(courseId);
-        List<AssignmentResponse> overdue = new ArrayList<>();
+        List<Response> overdue = new ArrayList<>();
         LocalDateTime current = LocalDateTime.now();
         for (Assignment assignment : assignments) {
             if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(current)) {
-                overdue.add(new AssignmentResponse(
+                overdue.add(new Response(
                         assignment.getCourse().getId(),
                         assignment.getCategory() != null ? assignment.getCategory().getId() : null,
                         assignment.getId(),

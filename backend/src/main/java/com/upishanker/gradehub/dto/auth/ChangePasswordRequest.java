@@ -1,4 +1,4 @@
-package com.upishanker.gradehub.dto;
+package com.upishanker.gradehub.dto.auth;
 import jakarta.validation.constraints.*;
 
 public record ChangePasswordRequest(

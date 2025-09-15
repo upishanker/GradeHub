@@ -1,8 +1,8 @@
-package com.upishanker.gradehub.dto;
+package com.upishanker.gradehub.dto.course;
 
 import jakarta.validation.constraints.*;
 
-public class UpdateCourseRequest {
+public class UpdateRequest {
     @NotBlank
     @Size(max = 100)
     private String name;
@@ -17,8 +17,8 @@ public class UpdateCourseRequest {
     @Max(6)
     private Double creditHours;
     
-    public UpdateCourseRequest() {}
-    public UpdateCourseRequest(String name, Double goal, String semester, Double creditHours) {
+    public UpdateRequest() {}
+    public UpdateRequest(String name, Double goal, String semester, Double creditHours) {
         this.name = name;
         this.goal = goal;
         this.semester = semester;
