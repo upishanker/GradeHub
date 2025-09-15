@@ -95,7 +95,7 @@ export default function Course() {
                 toast.error("Failed to update");
                 return;
             }
-            toast.error("Course updated successfully!");
+            toast.success("Course updated successfully!");
             setIsEditing(false);
             mutate(`http://localhost:8080/api/courses/${search}`);
         } catch (err) {
@@ -310,6 +310,7 @@ export default function Course() {
                                                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                                             });
                                             mutate(`http://localhost:8080/api/assignments?courseId=${search}`);
+                                            toast.success("Assignment deleted successfully")
                                         }}
                                     >
                                         Delete
@@ -412,7 +413,10 @@ export default function Course() {
                         fetch(`http://localhost:8080/api/courses/${parseInt(String(search))}`, {
                             method: 'DELETE',
                             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                        }).then(() => router.push('/dashboard'))
+                        }).then(() => {
+                            toast.success("Course successfully deleted")
+                            router.push('/dashboard')
+                        })
                     }
                 >
                     Delete Course

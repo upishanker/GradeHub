@@ -163,7 +163,7 @@ export default function AddCourse() {
                 toast.error('Failed to create course')
                 return
             }
-            toast.error('Course created successfully')
+            toast.success('Course created successfully')
             router.push('/dashboard');
 
         } catch (error) {

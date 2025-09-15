@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { GoogleLogin } from '@react-oauth/google';
+import toast from "react-hot-toast";
 
 const formSchema = z.object({
     username: z.string().min(3, { message: 'Username must be at least 3 characters.' }),
@@ -62,7 +63,7 @@ export default function SignupPage() {
                 toast.error('Failed to create user')
                 return
             }
-            toast.error('User created successfully')
+            toast.success('User created successfully')
             router.push('/account/login');
         } catch (error) {
             console.error(error)

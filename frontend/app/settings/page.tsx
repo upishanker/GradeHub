@@ -12,6 +12,7 @@ import {
     setUserGpaScale,
     setCourseLetterPercentScale,
 } from "@/utils/helpers";
+import toast from "react-hot-toast";
 
 type Course = {
     id: number;
@@ -145,7 +146,7 @@ export default function SettingsPage() {
         setCourseLetterPercentScale(courseId, rows);
 
         setCourseScalesDirty((prev) => ({ ...prev, [courseId]: false }));
-        toast.error("Course scale saved.");
+        toast.success("Course scale saved.");
     };
 
     const loadDefaultCourseScale = (courseId: number) => {
@@ -211,7 +212,7 @@ export default function SettingsPage() {
 
         setLocalGpa(null);
         mutate("http://localhost:8080/api/gradescale");
-        toast.error("GPA scale saved!");
+        toast.success("GPA scale saved!");
     };
 
     return (

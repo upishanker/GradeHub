@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/popover";
 import {NavBar} from "@/app/navbar/Navbar";
 import {toNumberGrade} from "@/utils/helpers";
+import toast from 'react-hot-toast';
 
 
 const seasons = [
@@ -153,7 +154,7 @@ export default function AddPastCourse() {
                 toast.error('Failed to create course')
                 return
             }
-            toast.error('Course created successfully')
+            toast.success('Course created successfully')
             router.push('/dashboard');
 
         } catch (error) {

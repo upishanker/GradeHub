@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
+import toast from "react-hot-toast";
 
 const fetcher = async (url: string) => {
     const token = localStorage.getItem('token');
@@ -133,7 +134,7 @@ export default function AddAssignment() {
                 toast.error('Failed to create assignment');
                 return;
             }
-            toast.error('Assignment created successfully');
+            toast.success('Assignment created successfully');
             router.push('/course?id=' + search);
         } catch (error) {
             console.error(error);

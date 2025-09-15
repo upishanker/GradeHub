@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {NavBar} from "@/app/navbar/Navbar";
 import { useSearchParams } from "next/navigation";
+import toast from 'react-hot-toast';
 
 const formSchema = z.object({
     name: z.string().max(100, { message: 'Name must be less than 100 characters.' }),
@@ -76,7 +77,7 @@ export default function AddCategory() {
                 toast.error('Failed to create category');
                 return
             }
-            toast.error('Category created successfully')
+            toast.success('Category created successfully')
             router.push('/course?id=' + search);
 
         } catch (error) {

@@ -9,6 +9,7 @@ import {Label} from "@/components/ui/label";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {FaPencilAlt, FaSave} from "react-icons/fa";
+import toast from "react-hot-toast";
 
 
 export default function Account() {
@@ -103,7 +104,7 @@ export default function Account() {
                 toast.error("Failed to update");
                 return;
             }
-            toast.error("Profile update successfully!");
+            toast.success("Profile update successfully!");
             setIsEditing(false);
             mutate("http://localhost:8080/api/users")
         }
@@ -145,7 +146,7 @@ export default function Account() {
                 toast.error('Failed to change password')
                 return
             }
-            toast.error('Password changed successfully')
+            toast.success('Password changed successfully')
 
         } catch (error) {
             console.error(error)
@@ -172,7 +173,7 @@ export default function Account() {
             toast.error("Failed to set password");
             return;
         }
-        toast.error("Password set successfully! You can now log in with email/password.");
+        toast.success("Password set successfully! You can now log in with email/password.");
         setFormValues(prev => ({ ...prev, newPassword: '' }));
         // Refresh user profile to reflect passwordSet = true
         mutate("http://localhost:8080/api/users");
