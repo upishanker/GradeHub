@@ -59,11 +59,15 @@ public class UserService {
         user.setUsername(createRequest.username());
         user.setEmail(createRequest.email());
         user.setPassword(passwordEncoder.encode(createRequest.password()));
+        user.setProvider("LOCAL");
+        user.setPasswordSet(true);
         userRepository.save(user);
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.getProvider(),
+                user.isPasswordSet()
         );
     }
     public UserResponse getUserById(Long id) {
@@ -72,7 +76,9 @@ public class UserService {
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.getProvider(),
+                user.isPasswordSet()
         );
     }
     public UserResponse changeUsername(Long userId, String newUsername) {
@@ -89,7 +95,9 @@ public class UserService {
         return new UserResponse(
                 currentUser.getId(),
                 currentUser.getUsername(),
-                currentUser.getEmail()
+                currentUser.getEmail(),
+                currentUser.getProvider(),
+                currentUser.isPasswordSet()
         );
     }
     public UserResponse updateUser(Long userId, UpdateUserRequest updateRequest) {
@@ -109,7 +117,9 @@ public class UserService {
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.getProvider(),
+                user.isPasswordSet()
         );
     }
     public BigDecimal calculateGPA(Long userId) {
@@ -198,7 +208,9 @@ public class UserService {
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.getProvider(),
+                user.isPasswordSet()
         );
     }
     public String login(String email, String password) {
@@ -224,12 +236,39 @@ public class UserService {
     public String verifyCodeAndGenerateToken(String loginSessionId, String code) {
         return codeService.verifyCode(loginSessionId, code, tempLoginSessionStore);
     }
+    public UserResponse setPasswordIfUnset(Long userId, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+        // Only allow if currently unset
+        if (user.isPasswordSet()) {
+            throw new IncorrectPasswordException("Password already set. Use change password.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordSet(true);
+
+        // If the user was GOOGLE, keep provider as GOOGLE.
+        // If you want to switch provider to LOCAL after setting a password, you could,
+        // but it's fine to keep provider="GOOGLE" and just indicate passwordSet=true.
+        userRepository.save(user);
+
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getProvider(),
+                user.isPasswordSet()
+        );
+    }
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(user -> new UserResponse(
                         user.getId(),
                         user.getUsername(),
-                        user.getEmail()
+                        user.getEmail(),
+                        user.getProvider(),
+                        user.isPasswordSet()
                 ))
                 .toList();
     }

@@ -20,6 +20,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<PastCourse> pastCourses = new ArrayList<>();
+    private String provider;
+    private boolean passwordSet;
+
     public User() {}
     public User(String username, String email, String password) {
         this.username = username;
@@ -63,4 +66,8 @@ public class User {
     public void setPastCourses(List<PastCourse> pastCourses) {
         this.pastCourses = pastCourses;
     }
+    public String getProvider() { return provider; }
+    public void setProvider(String provider) { this.provider = provider; }
+    public boolean isPasswordSet() { return passwordSet; }
+    public void setPasswordSet(boolean passwordSet) { this.passwordSet = passwordSet; }
 }

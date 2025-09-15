@@ -64,6 +64,15 @@ public class UserController {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return userService.changePassword(userId, changePasswordRequest);
     }
+    @PatchMapping("/password/set")
+    public UserResponse setPassword(@RequestBody Map<String, String> req) {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String newPassword = req.get("newPassword");
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters");
+        }
+        return userService.setPasswordIfUnset(userId, newPassword);
+    }
 
     @DeleteMapping()
     public void deleteUser() {

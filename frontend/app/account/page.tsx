@@ -42,6 +42,7 @@ export default function Account() {
     const [isEditing, setIsEditing] = useState(false);
     const [username, setUsername] = useState(data?.username ?? "");
     const [email, setEmail] = useState(data?.email ?? "");
+    const isGoogleNoPassword = data?.provider === 'GOOGLE' && !data?.passwordSet;
 
     const handleEditToggle = () => {
         setIsEditing(!isEditing);
@@ -151,6 +152,31 @@ export default function Account() {
             alert('An error occurred')
         }
     };
+    const handleSetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (formValues.newPassword.length < 8) {
+            setErrors(prev => ({ ...prev, newPassword: 'New Password must be at least 8 characters.' }));
+            return;
+        }
+        const token = localStorage.getItem("token");
+        const res = await fetch('http://localhost:8080/api/users/password/set', {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json',
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ newPassword: formValues.newPassword })
+        });
+        if (!res.ok) {
+            console.error(await res.text());
+            alert("Failed to set password");
+            return;
+        }
+        alert("Password set successfully! You can now log in with email/password.");
+        setFormValues(prev => ({ ...prev, newPassword: '' }));
+        // Refresh user profile to reflect passwordSet = true
+        mutate("http://localhost:8080/api/users");
+    };
     function handleLogout() {
         localStorage.removeItem("token");
         router.push("/account/login");
@@ -212,14 +238,36 @@ export default function Account() {
                 <div className="flex items-center p-4">
                     <Card className="w-full max-w-md">
                         <CardHeader>
-                            <CardTitle className="text-center text-2xl">Change Password</CardTitle>
+                            <CardTitle className="text-center text-2xl">
+                                {isGoogleNoPassword ? 'Set Password' : 'Change Password'}
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            {isGoogleNoPassword ? (
+                                <form onSubmit={handleSetPassword} className="space-y-4">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="newPassword">New Password</Label>
+                                        <Input
+                                            id="newPassword"
+                                            type="password"
+                                            name="newPassword"
+                                            placeholder="●●●●●●●●"
+                                            value={formValues.newPassword}
+                                            onChange={handleChange}
+                                        />
+                                        {errors.newPassword && (
+                                            <p className="text-sm text-red-600">{errors.newPassword}</p>
+                                        )}
+                                    </div>
+                                    <Button type="submit" className="w-full">Set Password</Button>
+                                </form>
+                            ) : (
+                                <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-1">
                                     <Label htmlFor="currentPassword">Current Password</Label>
                                     <Input
                                         id="currentPassword"
+                                        type="password"
                                         name="currentPassword"
                                         placeholder="●●●●●●●●"
                                         value={formValues.currentPassword}
@@ -234,6 +282,7 @@ export default function Account() {
                                     <Label htmlFor="newPassword">New Password</Label>
                                     <Input
                                         id="newPassword"
+                                        type="password"
                                         name="newPassword"
                                         placeholder="●●●●●●●●"
                                         value={formValues.newPassword}
@@ -247,6 +296,7 @@ export default function Account() {
                                     Change Password
                                 </Button>
                             </form>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-
+import { GoogleLogin } from '@react-oauth/google';
 
 const formSchema = z.object({
     username: z.string().min(3, { message: 'Username must be at least 3 characters.' }),
@@ -44,7 +44,7 @@ export default function SignupPage() {
             const fieldErrors: { [key: string]: string } = {};
             result.error.errors.forEach((err) => {
                 if (err.path[0]) {
-                    fieldErrors[err.path[0]] = err.message;
+                    fieldErrors[err.path[0] as string] = err.message;
                 }
             });
             setErrors(fieldErrors);
@@ -68,6 +68,38 @@ export default function SignupPage() {
             console.error(error)
             alert('An error occurred')
         }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse: any) => {
+        try {
+            const idToken = credentialResponse?.credential;
+            if (!idToken) {
+                alert("Google sign up failed: missing credential");
+                return;
+            }
+            // Same endpoint as login. Backend will upsert user and return JWT.
+            const resp = await fetch("http://localhost:8080/api/auth/google", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken }),
+            });
+            if (!resp.ok) {
+                const txt = await resp.text();
+                console.error(txt);
+                alert("Google sign-in failed");
+                return;
+            }
+            const data = await resp.json();
+            localStorage.setItem("token", data.token);
+            router.push("/");
+        } catch (e) {
+            console.error(e);
+            alert("Google sign-in failed");
+        }
+    };
+
+    const handleGoogleError = () => {
+        alert("Google sign-in failed");
     };
 
     return (
@@ -129,6 +161,15 @@ export default function SignupPage() {
                             <Button type="submit" className="w-full">
                                 Sign Up
                             </Button>
+
+                            <div className="relative mt-4 flex items-center justify-center">
+                                <span className="mx-2 text-xs text-muted-foreground">or</span>
+                            </div>
+
+                            <div className="flex justify-center">
+                                <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
+                            </div>
+
                             <div className="mt-4 text-center text-sm">
                                 Already have an account?{" "}
                                 <a href="/account/login" className="underline underline-offset-4">
