@@ -23,6 +23,8 @@ public class Course {
     @OneToMany(mappedBy = "course" , cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Assignment> assignments = new ArrayList<>();
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CourseGradeScale> gradeScales = new ArrayList<>();
 
     public Course() {}
     public Course(User user, String name, String semester, double goal, BigDecimal grade) {
@@ -71,5 +73,11 @@ public class Course {
     }
     public void setAssignments(List<Assignment> assignments) {
         this.assignments = assignments;
+    }
+    public List<CourseGradeScale> getGradeScales() {
+        return gradeScales;
+    }
+    public void setGradeScales(List<CourseGradeScale> gradeScales) {
+        this.gradeScales = gradeScales;
     }
 }

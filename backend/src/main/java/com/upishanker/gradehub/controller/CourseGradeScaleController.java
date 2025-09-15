@@ -8,6 +8,7 @@ import com.upishanker.gradehub.repository.CourseRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -36,6 +37,7 @@ public class CourseGradeScaleController extends BaseController {
     }
 
     @PutMapping
+    @Transactional
     public void replaceScale(@PathVariable Long courseId, @RequestBody List<CourseGradeScaleDto> body, HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         Course course = courseRepository.findById(courseId)
