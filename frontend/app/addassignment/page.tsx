@@ -9,7 +9,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { NavBar } from '@/app/navbar/Navbar';
+import { NavBar } from '@/components/Navbar';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import {
     Popover, PopoverContent, PopoverTrigger,

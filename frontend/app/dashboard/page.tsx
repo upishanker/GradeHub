@@ -1,7 +1,7 @@
 "use client"
 import {Card, CardContent, CardFooter, CardHeader,} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
-import {NavBar} from "@/app/navbar/Navbar";
+import {NavBar} from "@/components/Navbar";
 import {ArcElement, Chart as ChartJS, Legend} from "chart.js";
 import {Doughnut} from "react-chartjs-2";
 import Link from "next/link";

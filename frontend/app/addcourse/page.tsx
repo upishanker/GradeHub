@@ -28,7 +28,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import {NavBar} from "@/app/navbar/Navbar";
+import {NavBar} from "@/components/Navbar";
 import {toNumberGrade} from "@/utils/helpers";
 import toast from "react-hot-toast";
 

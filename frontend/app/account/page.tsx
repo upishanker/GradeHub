@@ -1,6 +1,6 @@
 "use client"
 import {useRouter} from "next/navigation";
-import {NavBar} from "@/app/navbar/Navbar";
+import {NavBar} from "@/components/Navbar";
 import useSWR, {mutate} from "swr";
 import {z} from "zod";
 import {useEffect, useState} from "react";

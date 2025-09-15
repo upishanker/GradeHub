@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from "react-hot-toast";
+import {ModeToggle} from "@/components/ui/darkmodetoggle";
 
 const formSchema = z.object({
     username: z.string().min(3, { message: 'Username must be at least 3 characters.' }),
@@ -105,6 +106,7 @@ export default function SignupPage() {
 
     return (
         <div>
+            <ModeToggle />
             <div className="flex items-center justify-center min-h-screen p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>

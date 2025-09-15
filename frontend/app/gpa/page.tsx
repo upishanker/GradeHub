@@ -2,7 +2,7 @@
 import useSWR from "swr";
 import {Chart as ChartJS, ArcElement, Legend } from "chart.js";
 import {Doughnut} from "react-chartjs-2";
-import {NavBar} from "@/app/navbar/Navbar";
+import {NavBar} from "@/components/Navbar";
 import {Card, CardHeader, CardContent, CardFooter} from "@/components/ui/card";
 import courseAndGradeFetcher from "@/utils/fetchers"
 
