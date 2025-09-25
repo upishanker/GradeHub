@@ -141,7 +141,7 @@ public class UserService {
             BigDecimal creditHours = BigDecimal.valueOf(ch);
 
             // 1) Compute numeric percent for the course (0..100), normalized by effective weights
-            BigDecimal percent = courseService.calculateGrade(course.getId());
+            BigDecimal percent = courseService.calculateCourseGradeNormalized(course.getId());
 
             // 2) Map percent -> letter using the course's CourseGradeScale
             String letter = mapPercentToLetterForCourse(course.getId(), percent);
@@ -149,7 +149,7 @@ public class UserService {
             // 3) Map letter -> GPA using the user's GradeScale
             BigDecimal gpaValue = mapLetterToUserGpa(userId, letter, userGpaRows);
 
-            if (gpaValue != null) {
+            if (gpaValue != null && percent.compareTo(BigDecimal.ZERO) != 0) {
                 gradePoints = gradePoints.add(creditHours.multiply(gpaValue));
                 totalHours = totalHours.add(creditHours);
             }

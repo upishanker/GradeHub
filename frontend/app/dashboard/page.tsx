@@ -8,7 +8,7 @@ import Link from "next/link";
 import {Plus} from "lucide-react"
 import useSWR from "swr";
 import BlankState from "@/components/blank-state";
-// Removed courseAndGradeFetcher import - using simple fetcher instead
+
 
 const fetcher = async (url: string) => {
     const token = localStorage.getItem("token");
@@ -73,7 +73,11 @@ export default function Dashboard() {
                                 <div className="text-zinc-500">{course.semester}</div>
                             </CardHeader>
                             <CardContent className="flex justify-center">
-                                <h1>Grade: {course.grade ?? "N/A"}% ({course.letterGrade ?? "N/A"})</h1>
+                                {course.grade == 0 ? (
+                                    <h1>No Graded Assignments</h1>
+                                ) : (
+                                    <h1>Grade: {course.grade ?? "N/A"}% ({course.letterGrade ?? "N/A"})</h1>
+                                )}
                             </CardContent>
                             <CardFooter className="flex justify-center">
                                 <Button asChild>
@@ -170,6 +174,7 @@ export default function Dashboard() {
                                         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                                     })
                                 }
+                            >
                             >
                                 Delete Course
                             </Button>

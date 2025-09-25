@@ -13,6 +13,8 @@ import {
     setCourseLetterPercentScale,
 } from "@/utils/helpers";
 import toast from "react-hot-toast";
+import Link from "next/link";
+import {Plus} from "lucide-react";
 
 type Course = {
     id: number;
@@ -228,7 +230,15 @@ export default function SettingsPage() {
                     </CardHeader>
                     <CardContent>
                         {!courses || courses.length === 0 ? (
-                            <p className="text-zinc-500">No courses found.</p>
+                            <>
+                                <p className="text-zinc-500">No courses; try adding one!</p>
+                                <Button asChild className="h-10 rounded-0.5rem mt-4">
+                                    <Link href="/addcourse">
+                                        Add Course
+                                        <Plus/>
+                                    </Link>
+                                </Button>
+                            </>
                         ) : (
                             <div className="space-y-4">
                                 {courses.map((c) => {

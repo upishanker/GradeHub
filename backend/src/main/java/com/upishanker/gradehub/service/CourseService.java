@@ -45,7 +45,7 @@ public class CourseService {
         courseGradeScaleRepository.saveAll(defaultScales);
 
         // Calculate grade and letter grade
-        BigDecimal grade = calculateCourseGradeNormalized(course);
+        BigDecimal grade = calculateCourseGradeNormalized(course.getId());
         String letterGrade = mapPercentToLetter(course.getId(), grade);
 
         return new Response(
@@ -70,7 +70,7 @@ public class CourseService {
         }
 
         // Calculate grade and letter grade
-        BigDecimal grade = calculateCourseGradeNormalized(course);
+        BigDecimal grade = calculateCourseGradeNormalized(course.getId());
         String letterGrade = mapPercentToLetter(course.getId(), grade);
 
         return new Response(
@@ -88,7 +88,7 @@ public class CourseService {
     public List<Response> getCoursesByUserId(Long userId) {
         return courseRepository.findByUserId(userId).stream()
                 .map(course -> {
-                    BigDecimal grade = calculateCourseGradeNormalized(course);
+                    BigDecimal grade = calculateCourseGradeNormalized(course.getId());
                     String letterGrade = mapPercentToLetter(course.getId(), grade);
                     return new Response(
                             course.getUser().getId(),
@@ -108,7 +108,7 @@ public class CourseService {
         Course course = courseRepository.findByNameAndUserId(name, userId);
 
         // Calculate grade and letter grade
-        BigDecimal grade = calculateCourseGradeNormalized(course);
+        BigDecimal grade = calculateCourseGradeNormalized(course.getId());
         String letterGrade = mapPercentToLetter(course.getId(), grade);
 
         return new Response(
@@ -147,7 +147,7 @@ public class CourseService {
         courseRepository.save(course);
 
         // Calculate grade and letter grade
-        BigDecimal grade = calculateCourseGradeNormalized(course);
+        BigDecimal grade = calculateCourseGradeNormalized(course.getId());
         String letterGrade = mapPercentToLetter(course.getId(), grade);
 
         return new Response(
@@ -171,21 +171,23 @@ public class CourseService {
             throw new AccessDeniedException("You don't have permission to access this course");
         }
 
-        return calculateCourseGradeNormalized(course);
+        return calculateCourseGradeNormalized(course.getId());
     }
 
     public BigDecimal calculateGrade(Long courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
 
-        return calculateCourseGradeNormalized(course);
+        return calculateCourseGradeNormalized(course.getId());
     }
 
     /**
      * Computes course grade considering only graded work and normalizing by the sum of
      * weights that actually contributed. If nothing is graded, returns 0.00.
      */
-    private BigDecimal calculateCourseGradeNormalized(Course course) {
+    public BigDecimal calculateCourseGradeNormalized(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new CourseNotFoundException("Course not found with ID: " + courseId));
         // Accumulators
         BigDecimal weightedSum = BigDecimal.ZERO;    // sum of (componentScore * componentWeight)
         BigDecimal effectiveWeightSum = BigDecimal.ZERO; // sum of componentWeight for components that contributed

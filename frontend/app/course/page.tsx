@@ -10,6 +10,7 @@ import {useSearchParams, useRouter} from "next/navigation";
 import {FaPencilAlt, FaSave} from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import ProgressBar from "@/components/ProgressBar"
 
 const fetcher = async (url: string) => {
     const token = localStorage.getItem("token");
@@ -55,10 +56,17 @@ export default function Course() {
     if (assignmentsError || courseError || categoryError) return 'An error has occured';
 
     const [isEditing, setIsEditing] = useState(false);
+    const [editingAssignments, setEditingAssignments] = useState<Record<number, boolean>>({});
+    const [assignmentEdits, setAssignmentEdits] = useState<Record<number, any>>({});
     const [name, setName] = useState(courseData?.name ?? "");
     const [goal, setGoal] = useState(courseData?.goal ?? "");
     const [semester, setSemester] = useState(courseData?.semester ?? "");
     const [creditHours, setCreditHours] = useState(courseData?.creditHours ?? "");
+
+    const isEmpty = (arr) => !Array.isArray(arr) || arr.length === 0;
+    const hasAnything =
+        (!isEmpty(categories)) ||
+        (!isEmpty(assignments));
 
     useEffect(() => {
         if (courseData) {
@@ -78,7 +86,6 @@ export default function Course() {
             setCreditHours(courseData.creditHours ?? "");
         }
     };
-
     const handleSave = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -102,7 +109,38 @@ export default function Course() {
             console.error(err);
         }
     };
+    const toggleAssignmentEdit = (id: number, assignment?: any) => {
+        setEditingAssignments(prev => ({ ...prev, [id]: !prev[id] }));
+        if (assignment) {
+            setAssignmentEdits(prev => ({
+                ...prev,
+                [id]: { ...assignment }  // shallow copy into state
+            }));
+        }
+    };
 
+    const saveAssignment = async (assignment: any, updates: any) => {
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`http://localhost:8080/api/assignments/${assignment.id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                },
+                body: JSON.stringify(updates),
+            });
+            if (!res.ok) {
+                toast.error("Failed to update assignment");
+                return;
+            }
+            toast.success("Assignment updated!");
+            setEditingAssignments(prev => ({ ...prev, [assignment.id]: false }));
+            mutate(`http://localhost:8080/api/assignments?courseId=${search}`);
+        } catch (err) {
+            console.error(err);
+        }
+    };
     const [openCategoryIds, setOpenCategoryIds] = useState<Record<number, boolean>>({});
     const toggleCategory = (id: number) => {
         setOpenCategoryIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -136,8 +174,8 @@ export default function Course() {
 
     const uncategorizedAssignments: any[] = assignmentsByCategory['uncategorized'] ?? [];
 
-    // Build rows: categories + their subcards (when open), then standalone
-    const rows: Array<{ type: 'category' | 'subcard' | 'standalone'; data: any }> = [];
+    // Build rows: categories + their subcards (when open), then a
+    const rows: Array<{ type: 'category' | 'subcard' | 'a'; data: any }> = [];
     (categories ?? []).forEach((category: any) => {
         rows.push({ type: 'category', data: category });
         if (openCategoryIds[category.id]) {
@@ -145,7 +183,7 @@ export default function Course() {
             rows.push({ type: 'subgroup', data: { assignments: catAssignments, category } });
         }
     });
-    uncategorizedAssignments.forEach(a => rows.push({ type: 'standalone', data: a }));
+    uncategorizedAssignments.forEach(a => rows.push({ type: 'a', data: a }));
 
     type EditableAssignment = {
         id: number;
@@ -185,8 +223,13 @@ export default function Course() {
                 {courseData?.name || 'Loading…'}
             </h1>
             <div className="max-w-6xl mx-auto px-4 pb-32">
-                <h1 className="text-3xl font-bold my-10 text-center">Assignments</h1>
-
+                {hasAnything ? (
+                    <h1 className="text-3xl font-bold my-10 text-center">Assignments</h1>
+                ) : (
+                    <div className="my-15 text-center text-gray-500 text-2xl">
+                        <p>No categories or assignments yet. Use the buttons below to add one.</p>
+                    </div>
+                )}
                 {/* Centered grid under the title */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center">
                     {rows.map((row, idx) => {
@@ -210,26 +253,109 @@ export default function Course() {
                                             >
                                                 <Card className="w-full border-dashed">
                                                     <CardHeader>
-                                                        <div className="flex items-center gap-2">
-                                                            <FileText className="h-4 w-4 text-zinc-600" />
-                                                            <h3 className="font-medium">{assignment.name}</h3>
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <FileText className="h-4 w-4 text-zinc-600" />
+                                                                {editingAssignments[assignment.id] ? (
+                                                                    <input
+                                                                        type="text"
+                                                                        value={assignmentEdits[assignment.id]?.name ?? ""}
+                                                                        onChange={(e) =>
+                                                                            setAssignmentEdits(prev => ({
+                                                                                ...prev,
+                                                                                [assignment.id]: { ...prev[assignment.id], name: e.target.value }
+                                                                            }))
+                                                                        }
+                                                                        className="border p-1 rounded text-sm"
+                                                                    />
+                                                                ) : (
+                                                                    <h3 className="font-medium">{assignment.name}</h3>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                onClick={() =>
+                                                                    editingAssignments[assignment.id]
+                                                                        ? saveAssignment(assignment, assignmentEdits[assignment.id])
+                                                                        : toggleAssignmentEdit(assignment.id, assignment)
+                                                                }
+                                                                aria-label={editingAssignments[assignment.id] ? "Save" : "Edit"}
+                                                                className="text-zinc-600 hover:text-zinc-800"
+                                                            >
+                                                                {editingAssignments[assignment.id] ? <FaSave /> : <FaPencilAlt />}
+                                                            </button>
                                                         </div>
                                                         <div className="text-zinc-500">
-                                                            {formatDue(assignment.dueDate) ?? 'No due date'}
+                                                            {editingAssignments[assignment.id] ? (
+                                                                <input
+                                                                    type="datetime-local"
+                                                                    value={toLocalInputValue(assignmentEdits[assignment.id]?.dueDate)}
+                                                                    onChange={(e) =>
+                                                                        setAssignmentEdits(prev => ({
+                                                                            ...prev,
+                                                                            [assignment.id]: {
+                                                                                ...prev[assignment.id],
+                                                                                dueDate: fromLocalInputValue(e.target.value),
+                                                                            },
+                                                                        }))
+                                                                    }
+                                                                    className="border p-1 rounded text-sm"
+                                                                />
+                                                            ) : (
+                                                                formatDue(assignment.dueDate) ?? "No due date"
+                                                            )}
                                                         </div>
                                                     </CardHeader>
+
                                                     <CardContent className="space-y-1">
-                                                        <div>Grade: {assignment.grade ?? "Not Graded"}</div>
-                                                        <div>Weight: {assignment.weight ?? category.weight ?? "N/A"}%</div>
+                                                        <div>
+                                                            Grade:{" "}
+                                                            {editingAssignments[assignment.id] ? (
+                                                                <input
+                                                                    type="number"
+                                                                    value={assignmentEdits[assignment.id]?.grade ?? ""}
+                                                                    onChange={(e) =>
+                                                                        setAssignmentEdits(prev => ({
+                                                                            ...prev,
+                                                                            [assignment.id]: { ...prev[assignment.id], grade: Number(e.target.value) }
+                                                                        }))
+                                                                    }
+                                                                    className="border p-1 rounded w-20 text-sm"
+                                                                />
+                                                            ) : (
+                                                                assignment.grade ?? "Not Graded"
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            Weight:{" "}
+                                                            {editingAssignments[assignment.id] ? (
+                                                                <input
+                                                                    type="number"
+                                                                    value={assignmentEdits[assignment.id]?.weight ?? ""}
+                                                                    onChange={(e) =>
+                                                                        setAssignmentEdits(prev => ({
+                                                                            ...prev,
+                                                                            [assignment.id]: { ...prev[assignment.id], weight: Number(e.target.value) }
+                                                                        }))
+                                                                    }
+                                                                    className="border p-1 rounded w-20 text-sm"
+                                                                />
+                                                            ) : (
+                                                                assignment.weight ?? "N/A"
+                                                            )}
+                                                             %
+                                                        </div>
                                                     </CardContent>
+
                                                     <CardFooter className="justify-center">
                                                         <Button
                                                             variant="destructive"
                                                             size="sm"
                                                             onClick={async () => {
                                                                 await fetch(`http://localhost:8080/api/assignments/${assignment.id}`, {
-                                                                    method: 'DELETE',
-                                                                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                                                                    method: "DELETE",
+                                                                    headers: {
+                                                                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                                                                    },
                                                                 });
                                                                 mutate(`http://localhost:8080/api/assignments?courseId=${search}`);
                                                             }}
@@ -287,42 +413,130 @@ export default function Course() {
 
 
 
-                        // standalone
+                        // a
                         const a = row.data;
                         return (
-                            <Card key={`standalone-${a.id}-${idx}`} className="w-full">
-                                <CardHeader className="text-center">
-                                    <h2 className="text-lg font-semibold">{a.name}</h2>
+                            <Card key={`standalone-${a.id}-${idx}`} className="w-full border">
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="h-4 w-4 text-zinc-600" />
+                                            {editingAssignments[a.id] ? (
+                                                <input
+                                                    type="text"
+                                                    value={assignmentEdits[a.id]?.name ?? ""}
+                                                    onChange={(e) =>
+                                                        setAssignmentEdits(prev => ({
+                                                            ...prev,
+                                                            [a.id]: { ...prev[a.id], name: e.target.value }
+                                                        }))
+                                                    }
+                                                    className="border p-1 rounded text-sm"
+                                                />
+                                            ) : (
+                                                <h3 className="font-medium">{a.name}</h3>
+                                            )}
+                                        </div>
+                                        <button
+                                            onClick={() =>
+                                                editingAssignments[a.id]
+                                                    ? saveAssignment(a, assignmentEdits[a.id])
+                                                    : toggleAssignmentEdit(a.id, a)
+                                            }
+                                            aria-label={editingAssignments[a.id] ? "Save" : "Edit"}
+                                            className="text-zinc-600 hover:text-zinc-800"
+                                        >
+                                            {editingAssignments[a.id] ? <FaSave /> : <FaPencilAlt />}
+                                        </button>
+                                    </div>
                                     <div className="text-zinc-500">
-                                        {formatDue(a.dueDate) ?? 'No due date'}
+                                        {editingAssignments[a.id] ? (
+                                            <input
+                                                type="datetime-local"
+                                                value={toLocalInputValue(assignmentEdits[a.id]?.dueDate)}
+                                                onChange={(e) =>
+                                                    setAssignmentEdits(prev => ({
+                                                        ...prev,
+                                                        [a.id]: {
+                                                            ...prev[a.id],
+                                                            dueDate: fromLocalInputValue(e.target.value),
+                                                        },
+                                                    }))
+                                                }
+                                                className="border p-1 rounded text-sm"
+                                            />
+                                        ) : (
+                                            formatDue(a.dueDate) ?? "No due date"
+                                        )}
                                     </div>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="text-center">Grade: {a.grade ?? "Not Graded"}</div>
-                                    <div className="text-center">Weight: {a.weight ?? "N/A"}%</div>
+
+                                <CardContent className="space-y-1">
+                                    <div>
+                                        Grade:{" "}
+                                        {editingAssignments[a.id] ? (
+                                            <input
+                                                type="number"
+                                                value={assignmentEdits[a.id]?.grade ?? ""}
+                                                onChange={(e) =>
+                                                    setAssignmentEdits(prev => ({
+                                                        ...prev,
+                                                        [a.id]: { ...prev[a.id], grade: Number(e.target.value) }
+                                                    }))
+                                                }
+                                                className="border p-1 rounded w-20 text-sm"
+                                            />
+                                        ) : (
+                                            a.grade ?? "Not Graded"
+                                        )}
+
+                                    </div>
+                                    <div>
+                                        Weight:{" "}
+                                        {editingAssignments[a.id] ? (
+                                            <input
+                                                type="number"
+                                                value={assignmentEdits[a.id]?.weight ?? ""}
+                                                onChange={(e) =>
+                                                    setAssignmentEdits(prev => ({
+                                                        ...prev,
+                                                        [a.id]: { ...prev[a.id], weight: Number(e.target.value) }
+                                                    }))
+                                                }
+                                                className="border p-1 rounded w-20 text-sm"
+                                            />
+                                        ) : (
+                                            a.weight ?? "N/A"
+                                        )}
+                                        %
+                                    </div>
                                 </CardContent>
-                                <CardFooter className="flex justify-center">
+
+                                <CardFooter className="justify-center">
                                     <Button
                                         variant="destructive"
+                                        size="sm"
                                         onClick={async () => {
                                             await fetch(`http://localhost:8080/api/assignments/${a.id}`, {
-                                                method: 'DELETE',
-                                                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                                                method: "DELETE",
+                                                headers: {
+                                                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                                                },
                                             });
                                             mutate(`http://localhost:8080/api/assignments?courseId=${search}`);
-                                            toast.success("Assignment deleted successfully")
                                         }}
                                     >
                                         Delete
                                     </Button>
                                 </CardFooter>
                             </Card>
+
                         );
                     })}
                 </div>
 
                 {/* Centered action buttons */}
-                <div className="flex justify-center gap-3 mt-8">
+                <div className="flex justify-center gap-3 mt-8 -mb-20">
                     <Button asChild className="rounded-0.5rem">
                         <Link href={`/addcategory?id=${search}`}>
                             Add Category <Plus className="ml-1 h-4 w-4" />
@@ -336,7 +550,7 @@ export default function Course() {
                 </div>
             </div>
 
-            {/* Course Information card bottom-right (sticky) */}
+            <div className="mb-15" ><ProgressBar grade={courseData?.grade} goal={courseData?.goal} /></div>
             <div className="flex justify-center mr-4">
                 <Card className="w-[360px] shadow-lg">
                     <CardHeader className="flex justify-between items-center">
@@ -404,8 +618,6 @@ export default function Course() {
                     </CardContent>
                 </Card>
             </div>
-
-
             <div className="flex justify-center py-10">
                 <Button
                     variant="destructive"
