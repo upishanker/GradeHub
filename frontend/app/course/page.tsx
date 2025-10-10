@@ -11,6 +11,7 @@ import {FaPencilAlt, FaSave} from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import ProgressBar from "@/components/ProgressBar"
+import UploadSyllabus from "@/components/UploadSyllabus";
 
 const fetcher = async (url: string) => {
     const token = localStorage.getItem("token");
@@ -618,6 +619,7 @@ export default function Course() {
                     </CardContent>
                 </Card>
             </div>
+            <UploadSyllabus />
             <div className="flex justify-center py-10">
                 <Button
                     variant="destructive"
