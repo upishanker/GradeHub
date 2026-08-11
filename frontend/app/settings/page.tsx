@@ -15,6 +15,7 @@ import {
 import toast from "react-hot-toast";
 import Link from "next/link";
 import {Plus} from "lucide-react";
+import {apiFetcher, apiGet, apiPut} from "@/utils/api";
 
 type Course = {
     id: number;
@@ -34,24 +35,17 @@ type UserGpaRow = {
     gpaValue: number;
 };
 
-const fetcher = async (url: string) => {
-    const token = localStorage.getItem("token");
-    const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!response.ok) throw new Error("Failed to fetch");
-    return await response.json();
-};
+const fetcher = apiFetcher;
 
 export default function SettingsPage() {
     const { data: courses } = useSWR<Course[]>(
-        "http://localhost:8080/api/courses",
+        "/api/courses",
         fetcher
     );
 
     // User-level GPA scale (letter -> GPA)
     const { data: gpaScale } = useSWR<UserGpaRow[]>(
-        "http://localhost:8080/api/gradescale",
+        "/api/gradescale",
         fetcher
     );
 
@@ -86,14 +80,9 @@ export default function SettingsPage() {
 
         // On expand, load scale if not loaded
         if (!expandedCourseIds[courseId] && !courseScales[courseId]) {
-            const token = localStorage.getItem("token");
-            const res = await fetch(
-                `http://localhost:8080/api/courses/${courseId}/gradescale`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            const data: CourseLetterRow[] = res.ok ? await res.json() : [];
+            const data: CourseLetterRow[] = await apiGet<CourseLetterRow[]>(
+                `/api/courses/${courseId}/gradescale`
+            ).catch(() => []);
             setCourseScales((prev) => ({ ...prev, [courseId]: data }));
 
             // Sync helpers with fetched per-course scale
@@ -110,9 +99,9 @@ export default function SettingsPage() {
         const current = courseScales[courseId] ?? [];
         const updated = current.slice();
         if (field === "minPercent") {
-            updated[idx][field] = parseFloat(value);
-        } else {
-            updated[idx][field] = value;
+            updated[idx] = { ...updated[idx], minPercent: parseFloat(value) };
+        } else if (field === "letter") {
+            updated[idx] = { ...updated[idx], letter: value };
         }
         setCourseScales((prev) => ({ ...prev, [courseId]: updated }));
         setCourseScalesDirty((prev) => ({ ...prev, [courseId]: true }));
@@ -126,20 +115,11 @@ export default function SettingsPage() {
     };
 
     const saveCourseScale = async (courseId: number) => {
-        const token = localStorage.getItem("token");
         const rows = courseScales[courseId] ?? [];
-        const res = await fetch(
-            `http://localhost:8080/api/courses/${courseId}/gradescale`,
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(rows),
-            }
-        );
-        if (!res.ok) {
+        try {
+            await apiPut(`/api/courses/${courseId}/gradescale`, rows);
+        } catch (err) {
+            console.error(err);
             toast.error("Failed to save course scale");
             return;
         }
@@ -181,9 +161,9 @@ export default function SettingsPage() {
     ) => {
         const working = workingGpa.slice();
         if (field === "gpaValue") {
-            working[idx][field] = parseFloat(value);
-        } else {
-            working[idx][field] = value;
+            working[idx] = { ...working[idx], gpaValue: parseFloat(value) };
+        } else if (field === "letter") {
+            working[idx] = { ...working[idx], letter: value };
         }
         setLocalGpa(working);
     };
@@ -195,16 +175,10 @@ export default function SettingsPage() {
     };
 
     const saveGpaScale = async () => {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:8080/api/gradescale", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(workingGpa),
-        });
-        if (!res.ok) {
+        try {
+            await apiPut("/api/gradescale", workingGpa);
+        } catch (err) {
+            console.error(err);
             toast.error("Failed to save GPA scale");
             return;
         }
@@ -213,7 +187,7 @@ export default function SettingsPage() {
         setUserGpaScale(workingGpa);
 
         setLocalGpa(null);
-        mutate("http://localhost:8080/api/gradescale");
+        mutate("/api/gradescale");
         toast.success("GPA scale saved!");
     };
 

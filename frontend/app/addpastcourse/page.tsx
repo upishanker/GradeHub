@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { Check, ChevronsUpDown, CalendarIcon } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
     Card,
@@ -28,8 +28,8 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import {NavBar} from "@/components/Navbar";
-import {toNumberGrade} from "@/utils/helpers";
 import toast from 'react-hot-toast';
+import {ApiError, apiPost} from "@/utils/api";
 
 
 const seasons = [
@@ -61,7 +61,7 @@ const letterGrades = [
 ] as const;
 const formSchema = z.object({
     name: z.string().max(100, { message: 'Name must be less than 100 characters.' }),
-    letterGrade: z.string().refine((val) => letterGrades.includes(val as any), { message: 'Invalid letter grade.' }),
+    letterGrade: z.string().refine((val) => (letterGrades as readonly string[]).includes(val), { message: 'Invalid letter grade.' }),
     season: z.string().min(1, { message: 'Please select a season.' }),
     year: z.string().min(1, { message: 'Please select a year.' }),
     creditHours: z.preprocess(
@@ -117,7 +117,6 @@ export default function AddPastCourse() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const result = formSchema.safeParse(formValues);
-        const token = localStorage.getItem("token");
 
         if (!result.success) {
             const fieldErrors: { [key: string]: string } = {};
@@ -141,25 +140,13 @@ export default function AddPastCourse() {
         };
 
         try {
-            const response = await fetch('http://localhost:8080/api/pastcourses', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(courseRequest),
-            })
-            if (!response.ok) {
-                console.error(await response.text())
-                toast.error('Failed to create course')
-                return
-            }
+            await apiPost('/api/pastcourses', courseRequest);
             toast.success('Course created successfully')
             router.push('/dashboard');
 
         } catch (error) {
             console.error(error)
-            toast.error('An error occurred')
+            toast.error(error instanceof ApiError ? 'Failed to create course' : 'An error occurred')
         }
     };
 

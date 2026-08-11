@@ -6,47 +6,44 @@ import {ArcElement, Chart as ChartJS, Legend} from "chart.js";
 import {Doughnut} from "react-chartjs-2";
 import Link from "next/link";
 import {Plus} from "lucide-react"
-import useSWR from "swr";
+import useSWR, {mutate} from "swr";
 import BlankState from "@/components/blank-state";
+import {apiDelete, apiFetcher} from "@/utils/api";
+import {Assignment, Course, PastCourse} from "@/utils/types";
+import toast from "react-hot-toast";
 
 
-const fetcher = async (url: string) => {
-    const token = localStorage.getItem("token");
-    const response = await fetch(url, {
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
-    if (!response.ok) {
-        throw new Error("Failed to fetch");
-    }
-    return await response.json();
-};
+const fetcher = apiFetcher;
 
 
 ChartJS.register(ArcElement, Legend)
 
 export default function Dashboard() {
-    const { data: courses, error, isLoading } = useSWR("http://localhost:8080/api/courses?v=2", fetcher)
-    if(error) {
+    // All hooks must run on every render, so every useSWR call comes before
+    // any early return.
+    const { data: courses, error, isLoading } = useSWR<Course[]>("/api/courses?v=2", fetcher)
+    const { data: pastCourses } = useSWR<PastCourse[]>("/api/pastcourses", fetcher)
+    const { data: assignmentsData, error: assignmentError } = useSWR<Assignment[]>("/api/assignments/upcoming", fetcher);
+    const { data: gpa, error: gpaError } = useSWR<number>("/api/users/gpa", fetcher);
+
+    const assignments = assignmentsData ?? [];
+
+    if (error) {
         console.error("SWR Error:", error);
         return 'An error has occured'
     }
-    const {data: pastCourses, error: pastCourseError} = useSWR("http://localhost:8080/api/pastcourses", fetcher)
-    const { data: assignmentsData, error: assignmentError}  = useSWR("http://localhost:8080/api/assignments/upcoming", fetcher);
-    const assignments = assignmentsData ?? [];
     if (assignmentError) {
         console.error(assignmentError);
         return 'An error has occurred';
     }
-    const { data: gpa, error: gpaError } = useSWR("http://localhost:8080/api/users/gpa", fetcher);
     if (gpaError) {
         return 'An error has occurred';
     }
+    const gpaValue = gpa ?? 0;
     const gpaData = {
         datasets: [
             {
-                data: [gpa, 4 - gpa],
+                data: [gpaValue, 4 - gpaValue],
                 backgroundColor: [
                     'rgba(34, 197, 94, 0.2)',
                     'rgba(128, 128, 128, 0.2)'
@@ -120,7 +117,7 @@ export default function Dashboard() {
                                             </div>
                                             <div>
                                                 <h1>
-                                                    {new Date(assignment.dueDate).toLocaleString(undefined, {
+                                                    {new Date(assignment.dueDate ?? "").toLocaleString(undefined, {
                                                         year: "numeric",
                                                         month: "short",
                                                         day: "numeric",
@@ -168,13 +165,17 @@ export default function Dashboard() {
                             <Button
                                 className="mx-auto"
                                 variant="destructive"
-                                onClick={() =>
-                                    fetch(`http://localhost:8080/api/pastcourses/${parseInt(pastCourse.id)}`, {
-                                        method: 'DELETE',
-                                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                                    })
-                                }
-                            >
+                                onClick={async () => {
+                                    try {
+                                        await apiDelete(`/api/pastcourses/${pastCourse.id}`);
+                                        toast.success("Course deleted");
+                                        mutate("/api/pastcourses");
+                                        mutate("/api/users/gpa");
+                                    } catch (err) {
+                                        console.error(err);
+                                        toast.error("Failed to delete course");
+                                    }
+                                }}
                             >
                                 Delete Course
                             </Button>

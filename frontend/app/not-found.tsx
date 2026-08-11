@@ -1,4 +1,4 @@
-import {Frown, Plus} from 'lucide-react';
+import {Frown} from 'lucide-react';
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
 

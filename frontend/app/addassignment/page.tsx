@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { z } from 'zod';
 import {
@@ -20,17 +20,10 @@ import {
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
 import toast from "react-hot-toast";
+import { ApiError, apiFetcher, apiPost } from '@/utils/api';
+import { Category } from '@/utils/types';
 
-const fetcher = async (url: string) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(url, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
-    if (!response.ok) throw new Error('Failed to fetch');
-    return await response.json();
-};
+const fetcher = apiFetcher;
 
 const createFormSchema = (useCategory: boolean, isGraded: boolean) =>
     z.object({
@@ -66,11 +59,10 @@ const createFormSchema = (useCategory: boolean, isGraded: boolean) =>
         ),
     });
 
-export default function AddAssignment() {
+function AddAssignmentContent() {
     const params = useSearchParams();
     const search = params.get('id');
     const router = useRouter();
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
     const [formValues, setFormValues] = useState({
         name: '',
@@ -89,13 +81,13 @@ export default function AddAssignment() {
         setErrors({ ...errors, [e.target.name]: '' });
     };
 
-    const { data: categoryData } = useSWR(
-        search ? `http://localhost:8080/api/categories?courseId=${search}` : null,
+    const { data: categoryData } = useSWR<Category[]>(
+        search ? `/api/categories?courseId=${search}` : null,
         fetcher
     );
 
     const selectedCategory = useCategory
-        ? categoryData?.find((cat: any) => cat.name === formValues.category)
+        ? categoryData?.find((cat) => cat.name === formValues.category)
         : null;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -112,7 +104,7 @@ export default function AddAssignment() {
             return;
         }
 
-        const assignmentRequest: any = {
+        const assignmentRequest: Record<string, unknown> = {
             courseId: search,
             name: result.data.name,
             ...(result.data.dueDate ? { dueDate: result.data.dueDate } : {}),
@@ -121,24 +113,12 @@ export default function AddAssignment() {
         };
 
         try {
-            const response = await fetch('http://localhost:8080/api/assignments', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(assignmentRequest),
-            });
-            if (!response.ok) {
-                console.error(await response.text());
-                toast.error('Failed to create assignment');
-                return;
-            }
+            await apiPost('/api/assignments', assignmentRequest);
             toast.success('Assignment created successfully');
             router.push('/course?id=' + search);
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
+            toast.error(error instanceof ApiError ? 'Failed to create assignment' : 'An error occurred');
         }
     };
 
@@ -207,7 +187,7 @@ export default function AddAssignment() {
                                                 <CommandList>
                                                     <CommandEmpty>No category found.</CommandEmpty>
                                                     <CommandGroup>
-                                                        {categoryData?.map((category: any) => (
+                                                        {categoryData?.map((category) => (
                                                             <CommandItem
                                                                 key={category.id}
                                                                 value={category.name}
@@ -307,5 +287,13 @@ export default function AddAssignment() {
                 </Card>
             </div>
         </div>
+    );
+}
+
+export default function AddAssignment() {
+    return (
+        <Suspense fallback={<div>Loading…</div>}>
+            <AddAssignmentContent />
+        </Suspense>
     );
 }

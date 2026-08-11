@@ -9,23 +9,14 @@ import {
 } from "@/components/ui/navigation-menu"
 import useSWR from "swr";
 import {ModeToggle} from "@/components/ui/darkmodetoggle";
+import {apiFetcher} from "@/utils/api";
+import {Course} from "@/utils/types";
 
 
-const fetcher = async (url: string) => {
-    const token = localStorage.getItem("token");
-    const response = await fetch(url, {
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
-    if (!response.ok) {
-        throw new Error("Failed to fetch");
-    }
-    return await response.json();
-};
+const fetcher = apiFetcher;
 
 export function NavBar() {
-    const { data, error } = useSWR("http://localhost:8080/api/courses", fetcher)
+    const { data, error } = useSWR<Course[]>("/api/courses", fetcher)
     if(error) return 'An error has occured'
 
     return (

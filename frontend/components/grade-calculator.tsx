@@ -1,12 +1,16 @@
 import {useState} from "react";
 import {Card, CardContent, CardHeader} from "@/components/ui/card";
 import {Calculator, X} from "lucide-react";
+import {Assignment} from "@/utils/types";
 
-const GradeCalculator = ({ assignments }: { assignments: any[] }) => {
-    const [calculatorAssignments, setCalculatorAssignments] = useState<any[]>([]);
-    const [draggedAssignment, setDraggedAssignment] = useState<any>(null);
+/** An assignment plus the hypothetical grade the user is testing out. */
+type CalculatorAssignment = Assignment & { calculatorGrade: number };
 
-    const handleDragStart = (assignment: any) => {
+const GradeCalculator = ({ assignments }: { assignments: Assignment[] }) => {
+    const [calculatorAssignments, setCalculatorAssignments] = useState<CalculatorAssignment[]>([]);
+    const [draggedAssignment, setDraggedAssignment] = useState<Assignment | null>(null);
+
+    const handleDragStart = (assignment: Assignment) => {
         setDraggedAssignment(assignment);
     };
 
@@ -22,11 +26,11 @@ const GradeCalculator = ({ assignments }: { assignments: any[] }) => {
         setDraggedAssignment(null);
     };
 
-    const removeFromCalculator = (assignmentId: string) => {
+    const removeFromCalculator = (assignmentId: number) => {
         setCalculatorAssignments(calculatorAssignments.filter(a => a.id !== assignmentId));
     };
 
-    const updateCalculatorGrade = (assignmentId: string, grade: number) => {
+    const updateCalculatorGrade = (assignmentId: number, grade: number) => {
         setCalculatorAssignments(calculatorAssignments.map(a =>
             a.id === assignmentId ? { ...a, calculatorGrade: grade } : a
         ));
@@ -139,7 +143,7 @@ const GradeCalculator = ({ assignments }: { assignments: any[] }) => {
 };
 
 // Drag and Drop Assignment Component
-const DraggableAssignment = ({ assignment, onDragStart }: { assignment: any, onDragStart: (assignment: any) => void }) => {
+const DraggableAssignment = ({ assignment, onDragStart }: { assignment: Assignment, onDragStart: (assignment: Assignment) => void }) => {
     return (
         <div
             draggable

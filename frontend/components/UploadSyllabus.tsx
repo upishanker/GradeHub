@@ -2,35 +2,35 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ApiError, apiPostFormData } from "@/utils/api";
+import toast from "react-hot-toast";
 
 export default function UploadSyllabus() {
     const [file, setFile] = useState<File | null>(null);
-    const [jsonResult, setJsonResult] = useState<any>(null);
+    const [jsonResult, setJsonResult] = useState<unknown>(null);
     const [loading, setLoading] = useState(false);
 
     const handleUpload = async () => {
-        if (!file) return alert("Select a file first!");
+        if (!file) {
+            toast.error("Select a file first!");
+            return;
+        }
         setLoading(true);
-        const token = localStorage.getItem("token");
 
         const formData = new FormData();
         formData.append("file", file);
 
-        const res = await fetch("http://localhost:8080/api/ocr", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-            body: formData,
-        });
-
-        if (!res.ok) {
-            alert("Failed to process file");
+        try {
+            const data = await apiPostFormData("/api/ocr", formData);
+            setJsonResult(data);
+        } catch (err) {
+            console.error(err);
+            toast.error(
+                err instanceof ApiError ? "Failed to process file" : "An error occurred"
+            );
+        } finally {
             setLoading(false);
-            return;
         }
-
-        const data = await res.json();
-        setJsonResult(data);
-        setLoading(false);
     };
 
     return (
@@ -48,11 +48,11 @@ export default function UploadSyllabus() {
                     {loading ? "Processing..." : "Upload & Parse"}
                 </Button>
 
-                {jsonResult && (
+                {jsonResult ? (
                     <pre className=" p-2 rounded-md text-sm mt-4 w-full overflow-auto">
             {JSON.stringify(jsonResult, null, 2)}
           </pre>
-                )}
+                ) : null}
             </CardContent>
         </Card>
     );

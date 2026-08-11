@@ -15,7 +15,7 @@ export default function BlankState() {
                 <div className="space-y-2 text-center">
                     <h2 className="text-2xl font-bold tracking-tight">No Courses</h2>
                     <p className="text-gray-500 dark:text-gray-400">
-                        It looks like you haven't added any courses yet. Try adding one!
+                        It looks like you haven&apos;t added any courses yet. Try adding one!
                     </p>
                 </div>
                 <div className="flex gap-5">

@@ -1,23 +1,10 @@
 "use client"
-import {router} from "next/client";
 import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import Link from "next/link";
-import {Plus} from "lucide-react";
+import {isLoggedIn} from "@/utils/auth";
 
 export default function Home() {
-    function isLoggedIn() {
-        const token = localStorage.getItem("token");
-        if (!token) return false;
-
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const expiry = payload.exp * 1000;
-            return Date.now() < expiry;
-        } catch (e) {
-            return false;
-        }
-    }
     const router = useRouter();
     if(isLoggedIn()) {
         router.push('/dashboard')

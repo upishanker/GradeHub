@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import {
@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import {NavBar} from "@/components/Navbar";
 import { useSearchParams } from "next/navigation";
 import toast from 'react-hot-toast';
+import { ApiError, apiPost } from '@/utils/api';
 
 const formSchema = z.object({
     name: z.string().max(100, { message: 'Name must be less than 100 characters.' }),
@@ -25,11 +26,10 @@ const formSchema = z.object({
 
 
 
-export default function AddCategory() {
+function AddCategoryContent() {
     const params = useSearchParams();
     const search = params.get('id')
     const router = useRouter();
-    const token = localStorage.getItem("token");
 
     const [formValues, setFormValues] = useState({
         name: '',
@@ -64,25 +64,13 @@ export default function AddCategory() {
         };
 
         try {
-            const response = await fetch('http://localhost:8080/api/categories', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(categoryRequest),
-            })
-            if (!response.ok) {
-                console.error(await response.text())
-                toast.error('Failed to create category');
-                return
-            }
+            await apiPost('/api/categories', categoryRequest);
             toast.success('Category created successfully')
             router.push('/course?id=' + search);
 
         } catch (error) {
             console.error(error)
-            toast.error('An error occurred')
+            toast.error(error instanceof ApiError ? 'Failed to create category' : 'An error occurred')
         }
     };
 
@@ -130,5 +118,13 @@ export default function AddCategory() {
                 </Card>
             </div>
         </div>
+    );
+}
+
+export default function AddCategory() {
+    return (
+        <Suspense fallback={<div>Loading…</div>}>
+            <AddCategoryContent />
+        </Suspense>
     );
 }

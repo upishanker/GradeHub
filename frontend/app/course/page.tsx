@@ -1,6 +1,6 @@
 "use client"
 import {NavBar} from "@/components/Navbar";
-import {useEffect, useMemo, useState} from "react";
+import {Suspense, useEffect, useMemo, useState} from "react";
 import {Card, CardContent, CardFooter, CardHeader} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import Link from "next/link";
@@ -8,19 +8,14 @@ import {Plus, Folder, ChevronDown, ChevronRight, FileText} from "lucide-react";
 import useSWR, {mutate} from "swr";
 import {useSearchParams, useRouter} from "next/navigation";
 import {FaPencilAlt, FaSave} from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import toast from "react-hot-toast";
 import ProgressBar from "@/components/ProgressBar"
 import UploadSyllabus from "@/components/UploadSyllabus";
+import {apiDelete, apiFetcher, apiPatch} from "@/utils/api";
+import {Assignment, Category, Course as CourseType} from "@/utils/types";
 
-const fetcher = async (url: string) => {
-    const token = localStorage.getItem("token");
-    const response = await fetch(url, {
-        headers: { "Authorization": `Bearer ${token}` }
-    });
-    if (!response.ok) { throw new Error("Failed to fetch"); }
-    return await response.json();
-};
+const fetcher = apiFetcher;
 
 const containerVariants = {
     open: {
@@ -36,35 +31,33 @@ const itemVariants = {
     open: { opacity: 1, x: 0 }
 };
 
-export default function Course() {
+function CourseContent() {
     const params = useSearchParams();
     const router = useRouter();
     const search = params.get('id');
 
-    const { data: assignments, error: assignmentsError } = useSWR(
-        search ? `http://localhost:8080/api/assignments?courseId=${search}` : null,
+    const { data: assignments, error: assignmentsError } = useSWR<Assignment[]>(
+        search ? `/api/assignments?courseId=${search}` : null,
         fetcher
     );
-    const { data: courseData, error: courseError } = useSWR(
-        search ? `http://localhost:8080/api/courses/${search}` : null,
+    const { data: courseData, error: courseError } = useSWR<CourseType>(
+        search ? `/api/courses/${search}` : null,
         fetcher
     );
-    const { data: categories, error: categoryError } = useSWR(
-        search ? `http://localhost:8080/api/categories?courseId=${search}` : null,
+    const { data: categories, error: categoryError } = useSWR<Category[]>(
+        search ? `/api/categories?courseId=${search}` : null,
         fetcher
     );
-
-    if (assignmentsError || courseError || categoryError) return 'An error has occured';
 
     const [isEditing, setIsEditing] = useState(false);
     const [editingAssignments, setEditingAssignments] = useState<Record<number, boolean>>({});
-    const [assignmentEdits, setAssignmentEdits] = useState<Record<number, any>>({});
+    const [assignmentEdits, setAssignmentEdits] = useState<Record<number, Partial<Assignment>>>({});
     const [name, setName] = useState(courseData?.name ?? "");
     const [goal, setGoal] = useState(courseData?.goal ?? "");
     const [semester, setSemester] = useState(courseData?.semester ?? "");
     const [creditHours, setCreditHours] = useState(courseData?.creditHours ?? "");
 
-    const isEmpty = (arr) => !Array.isArray(arr) || arr.length === 0;
+    const isEmpty = (arr: unknown) => !Array.isArray(arr) || arr.length === 0;
     const hasAnything =
         (!isEmpty(categories)) ||
         (!isEmpty(assignments));
@@ -89,28 +82,16 @@ export default function Course() {
     };
     const handleSave = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await fetch(`http://localhost:8080/api/courses/${search}`, {
-                method: "PATCH",
-                headers: {
-                    'Content-Type': 'application/json',
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ name, goal, semester, creditHours })
-            });
-            if (!res.ok) {
-                console.error(await res.text());
-                toast.error("Failed to update");
-                return;
-            }
+            await apiPatch(`/api/courses/${search}`, { name, goal, semester, creditHours });
             toast.success("Course updated successfully!");
             setIsEditing(false);
-            mutate(`http://localhost:8080/api/courses/${search}`);
+            mutate(`/api/courses/${search}`);
         } catch (err) {
             console.error(err);
+            toast.error("Failed to update");
         }
     };
-    const toggleAssignmentEdit = (id: number, assignment?: any) => {
+    const toggleAssignmentEdit = (id: number, assignment?: Assignment) => {
         setEditingAssignments(prev => ({ ...prev, [id]: !prev[id] }));
         if (assignment) {
             setAssignmentEdits(prev => ({
@@ -120,26 +101,16 @@ export default function Course() {
         }
     };
 
-    const saveAssignment = async (assignment: any, updates: any) => {
+    const saveAssignment = async (assignment: Assignment, updates: Partial<Assignment>) => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await fetch(`http://localhost:8080/api/assignments/${assignment.id}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`,
-                },
-                body: JSON.stringify(updates),
-            });
-            if (!res.ok) {
-                toast.error("Failed to update assignment");
-                return;
-            }
+            await apiPatch(`/api/assignments/${assignment.id}`, updates);
             toast.success("Assignment updated!");
             setEditingAssignments(prev => ({ ...prev, [assignment.id]: false }));
-            mutate(`http://localhost:8080/api/assignments?courseId=${search}`);
+            mutate(`/api/assignments?courseId=${search}`);
+            mutate(`/api/courses/${search}`);
         } catch (err) {
             console.error(err);
+            toast.error("Failed to update assignment");
         }
     };
     const [openCategoryIds, setOpenCategoryIds] = useState<Record<number, boolean>>({});
@@ -164,8 +135,8 @@ export default function Course() {
 
     // Precompute assignments grouped by categoryId
     const assignmentsByCategory = useMemo(() => {
-        const grouped: Record<string, any[]> = {};
-        (assignments ?? []).forEach((a: any) => {
+        const grouped: Record<string, Assignment[]> = {};
+        (assignments ?? []).forEach((a: Assignment) => {
             const key = a.categoryId ?? 'uncategorized';
             if (!grouped[key]) grouped[key] = [];
             grouped[key].push(a);
@@ -173,27 +144,25 @@ export default function Course() {
         return grouped;
     }, [assignments]);
 
-    const uncategorizedAssignments: any[] = assignmentsByCategory['uncategorized'] ?? [];
+    // Placed after every hook call so hook order stays stable across renders.
+    if (assignmentsError || courseError || categoryError) return 'An error has occured';
+
+    const uncategorizedAssignments: Assignment[] = assignmentsByCategory['uncategorized'] ?? [];
 
     // Build rows: categories + their subcards (when open), then a
-    const rows: Array<{ type: 'category' | 'subcard' | 'a'; data: any }> = [];
-    (categories ?? []).forEach((category: any) => {
+    type Row =
+        | { type: 'category'; data: Category }
+        | { type: 'subgroup'; data: { assignments: Assignment[]; category: Category } }
+        | { type: 'a'; data: Assignment };
+    const rows: Row[] = [];
+    (categories ?? []).forEach((category: Category) => {
         rows.push({ type: 'category', data: category });
         if (openCategoryIds[category.id]) {
-            const catAssignments = (assignmentsByCategory[String(category.id)] ?? []) as any[];
+            const catAssignments = assignmentsByCategory[String(category.id)] ?? [];
             rows.push({ type: 'subgroup', data: { assignments: catAssignments, category } });
         }
     });
     uncategorizedAssignments.forEach(a => rows.push({ type: 'a', data: a }));
-
-    type EditableAssignment = {
-        id: number;
-        name: string;
-        dueDate: string | null;
-        grade: number | null;
-        weight: number | null;
-        categoryId: number | null;
-    };
 
     const toLocalInputValue = (d?: string | null) => {
         if (!d) return "";
@@ -245,7 +214,7 @@ export default function Course() {
                                         exit="closed"
                                         className="contents" // so grid layout still works
                                     >
-                                        {assignments.map((assignment: any, i: number) => (
+                                        {assignments.map((assignment: Assignment, i: number) => (
                                             <motion.div
                                                 key={`sub-${assignment.id}-${i}`}
                                                 variants={itemVariants}
@@ -352,13 +321,9 @@ export default function Course() {
                                                             variant="destructive"
                                                             size="sm"
                                                             onClick={async () => {
-                                                                await fetch(`http://localhost:8080/api/assignments/${assignment.id}`, {
-                                                                    method: "DELETE",
-                                                                    headers: {
-                                                                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                                                    },
-                                                                });
-                                                                mutate(`http://localhost:8080/api/assignments?courseId=${search}`);
+                                                                await apiDelete(`/api/assignments/${assignment.id}`);
+                                                                mutate(`/api/assignments?courseId=${search}`);
+                                                                mutate(`/api/courses/${search}`);
                                                             }}
                                                         >
                                                             Delete
@@ -397,12 +362,10 @@ export default function Course() {
                                             size="sm"
                                             onClick={async (e) => {
                                                 e.stopPropagation(); // don’t toggle on delete click
-                                                await fetch(`http://localhost:8080/api/categories/${category.id}`, {
-                                                    method: 'DELETE',
-                                                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                                                });
-                                                mutate(`http://localhost:8080/api/categories?courseId=${search}`);
-                                                mutate(`http://localhost:8080/api/assignments?courseId=${search}`);
+                                                await apiDelete(`/api/categories/${category.id}`);
+                                                mutate(`/api/categories?courseId=${search}`);
+                                                mutate(`/api/assignments?courseId=${search}`);
+                                                mutate(`/api/courses/${search}`);
                                             }}
                                         >
                                             Delete Category
@@ -518,13 +481,9 @@ export default function Course() {
                                         variant="destructive"
                                         size="sm"
                                         onClick={async () => {
-                                            await fetch(`http://localhost:8080/api/assignments/${a.id}`, {
-                                                method: "DELETE",
-                                                headers: {
-                                                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                                },
-                                            });
-                                            mutate(`http://localhost:8080/api/assignments?courseId=${search}`);
+                                            await apiDelete(`/api/assignments/${a.id}`);
+                                            mutate(`/api/assignments?courseId=${search}`);
+                                            mutate(`/api/courses/${search}`);
                                         }}
                                     >
                                         Delete
@@ -551,7 +510,7 @@ export default function Course() {
                 </div>
             </div>
 
-            <div className="mb-15" ><ProgressBar grade={courseData?.grade} goal={courseData?.goal} /></div>
+            <div className="mb-15" ><ProgressBar grade={courseData?.grade ?? 0} goal={courseData?.goal ?? 0} /></div>
             <div className="flex justify-center mr-4">
                 <Card className="w-[360px] shadow-lg">
                     <CardHeader className="flex justify-between items-center">
@@ -623,19 +582,28 @@ export default function Course() {
             <div className="flex justify-center py-10">
                 <Button
                     variant="destructive"
-                    onClick={() =>
-                        fetch(`http://localhost:8080/api/courses/${parseInt(String(search))}`, {
-                            method: 'DELETE',
-                            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                        }).then(() => {
+                    onClick={async () => {
+                        try {
+                            await apiDelete(`/api/courses/${parseInt(String(search))}`);
                             toast.success("Course successfully deleted")
                             router.push('/dashboard')
-                        })
-                    }
+                        } catch (err) {
+                            console.error(err);
+                            toast.error("Failed to delete course");
+                        }
+                    }}
                 >
                     Delete Course
                 </Button>
             </div>
         </div>
+    );
+}
+
+export default function Course() {
+    return (
+        <Suspense fallback={<div>Loading…</div>}>
+            <CourseContent />
+        </Suspense>
     );
 }

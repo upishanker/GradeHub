@@ -1,26 +1,18 @@
-const courseAndGradeFetcher = async (url: string) => {
-    const token = localStorage.getItem("token");
-    console.log("Fetching Courses");
-    const response = await fetch(url, {
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
-    if (!response.ok) throw new Error("Failed to fetch courses");
-    const courses = await response.json();
+import { apiGet } from "@/utils/api";
+
+/**
+ * SWR fetcher that loads courses and enriches each one with its computed grade.
+ * `path` is a backend-relative path (e.g. "/api/courses?v=2").
+ */
+const courseAndGradeFetcher = async (path: string) => {
+    const courses = await apiGet<any[]>(path);
 
     return await Promise.all(
         courses.map(async (course: any) => {
-            const gradeRes = await fetch(`http://localhost:8080/api/courses/${course.id}/grade`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            const grade = gradeRes.ok ? await gradeRes.json() : null;
-            console.log(course.id, grade);
-            return {...course, grade};
+            const grade = await apiGet(`/api/courses/${course.id}/grade`).catch(() => null);
+            return { ...course, grade };
         })
     );
-}
+};
 
 export default courseAndGradeFetcher;

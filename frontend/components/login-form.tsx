@@ -10,9 +10,10 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useRouter } from "next/navigation";
 import toast from 'react-hot-toast'
+import { apiPost } from "@/utils/api";
 
 export function LoginForm({
                             className,
@@ -27,19 +28,8 @@ export function LoginForm({
       const email = (form.querySelector("#email") as HTMLInputElement).value;
       const password = (form.querySelector("#password") as HTMLInputElement).value;
 
-      const response = await fetch('http://localhost:8080/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await apiPost('/api/users/login', { email, password }, { skipAuth: true });
 
-      if (!response.ok) {
-        console.error(await response.text());
-        toast.error('Incorrect email or password');
-        return;
-      }
-
-      const data = await response.json();
       localStorage.setItem('loginSessionId', data.loginSessionId);
       router.push("/account/twofactor");
     } catch (error) {
@@ -48,25 +38,14 @@ export function LoginForm({
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     try {
       const idToken = credentialResponse?.credential;
       if (!idToken) {
         toast.error("Google login failed: missing credential");
         return;
       }
-      const resp = await fetch("http://localhost:8080/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-      if (!resp.ok) {
-        const txt = await resp.text();
-        console.error(txt);
-        toast.error("Google login failed");
-        return;
-      }
-      const data = await resp.json();
+      const data = await apiPost("/api/auth/google", { idToken }, { skipAuth: true });
       // Store your app JWT
       localStorage.setItem("token", data.token);
       // Navigate to the app (adjust path as needed)

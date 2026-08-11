@@ -1,7 +1,9 @@
 import { GradeScale } from "@/utils/types";
 
 // Cached user GPA scale (letter -> gpaValue), from /api/gradescale
-let userGpaScale: GradeScale[] = [];
+// Only the letter -> gpaValue half of GradeScale is relevant here.
+export type GpaScaleRow = Pick<GradeScale, "letter" | "gpaValue">;
+let userGpaScale: GpaScaleRow[] = [];
 
 // Optional: cached course-specific letter->minPercent mapping.
 // Keyed by courseId. Populate this after fetching /api/courses/{courseId}/gradescale.
@@ -24,7 +26,7 @@ const defaultLetterToPercent: Record<string, number> = {
     "F": 0,
 };
 
-export const setUserGpaScale = (newScale: GradeScale[]) => {
+export const setUserGpaScale = (newScale: GpaScaleRow[]) => {
     userGpaScale = newScale || [];
 };
 

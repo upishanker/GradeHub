@@ -5,26 +5,17 @@ import {Doughnut} from "react-chartjs-2";
 import {NavBar} from "@/components/Navbar";
 import {Card, CardHeader, CardContent, CardFooter} from "@/components/ui/card";
 import courseAndGradeFetcher from "@/utils/fetchers"
+import {apiFetcher} from "@/utils/api";
+import {Course} from "@/utils/types";
 
 
-const gpaFetcher = async (url: string) => {
-    const token = localStorage.getItem("token");
-    const response = await fetch(url, {
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
-    if (!response.ok) {
-        throw new Error("Failed to fetch");
-    }
-    return await response.json();
-};
+const gpaFetcher = apiFetcher;
 ChartJS.register(ArcElement, Legend)
 
 export default function Gpa() {
 
-    const { data: gpa, error: gpaError } = useSWR("http://localhost:8080/api/users/gpa", gpaFetcher);
-    const { data: courses, error, isLoading } = useSWR("http://localhost:8080/api/courses?v=2", courseAndGradeFetcher)
+    const { data: gpa, error: gpaError } = useSWR("/api/users/gpa", gpaFetcher);
+    const { data: courses } = useSWR<Course[]>("/api/courses?v=2", courseAndGradeFetcher)
     if (gpaError) {
         return 'An error has occurred';
     }
@@ -84,7 +75,7 @@ export default function Gpa() {
                                         <h1>Credit Hours: {course.creditHours ?? "N/A"}</h1>
                                         <h1>Grade: {course.letterGrade ?? "N/A"}</h1>
                                     </div>
-                                    <h1 className="mt-2 text-center">Grade Points: {course.letterGrade ? (letterToGpaPoints(course.letterGrade) * course.creditHours).toFixed(2) : "N/A"}</h1>
+                                    <h1 className="mt-2 text-center">Grade Points: {course.letterGrade ? (letterToGpaPoints(course.letterGrade) * (course.creditHours ?? 0)).toFixed(2) : "N/A"}</h1>
                                 </CardContent>
                             </Card>
                         ))}

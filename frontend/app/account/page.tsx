@@ -10,6 +10,8 @@ import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {FaPencilAlt, FaSave} from "react-icons/fa";
 import toast from "react-hot-toast";
+import {ApiError, apiFetcher, apiPatch} from "@/utils/api";
+import {isTokenValid, logout, redirectToLogin} from "@/utils/auth";
 
 
 export default function Account() {
@@ -22,21 +24,10 @@ export default function Account() {
     });
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-    const fetcher = async (url: string) => {
-        const token = localStorage.getItem("token");
-        const response = await fetch(url, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
-        if (!response.ok) {
-            throw new Error("Failed to fetch");
-        }
-        return await response.json();
-    };
+    const fetcher = apiFetcher;
 
     const { data, error, isLoading } = useSWR(
-        isClient ? "http://localhost:8080/api/users" : null,
+        isClient ? "/api/users" : null,
         fetcher
     );
 
@@ -55,20 +46,8 @@ export default function Account() {
 
     useEffect(() => {
         setIsClient(true);
-        const token = localStorage.getItem("token");
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const expiry = payload.exp * 1000;
-            if (Date.now() >= expiry) {
-                router.push("/login");
-            }
-        } catch (e) {
-            router.push("/login");
+        if (!isTokenValid()) {
+            redirectToLogin(router);
         }
     }, [router]);
 
@@ -90,32 +69,19 @@ export default function Account() {
     };
     const handleSave = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await fetch('http://localhost:8080/api/users', {
-                method: "PATCH",
-                headers: {
-                    'Content-Type': 'application/json',
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ username, email})
-            })
-            if(!res.ok) {
-                console.error(await res.text());
-                toast.error("Failed to update");
-                return;
-            }
+            await apiPatch('/api/users', { username, email });
             toast.success("Profile update successfully!");
             setIsEditing(false);
-            mutate("http://localhost:8080/api/users")
+            mutate("/api/users")
         }
         catch (err) {
             console.error(err);
+            toast.error("Failed to update");
         }
     }
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const result = formSchema.safeParse(formValues);
-        const token = localStorage.getItem("token");
 
         if (!result.success) {
             const fieldErrors: { [key: string]: string } = {};
@@ -133,24 +99,12 @@ export default function Account() {
         };
 
         try {
-            const response = await fetch('http://localhost:8080/api/users/password', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(courseRequest),
-            })
-            if (!response.ok) {
-                console.error(await response.text())
-                toast.error('Failed to change password')
-                return
-            }
+            await apiPatch('/api/users/password', courseRequest);
             toast.success('Password changed successfully')
 
         } catch (error) {
             console.error(error)
-            toast.error('An error occurred')
+            toast.error(error instanceof ApiError ? 'Failed to change password' : 'An error occurred')
         }
     };
     const handleSetPassword = async (e: React.FormEvent) => {
@@ -159,28 +113,20 @@ export default function Account() {
             setErrors(prev => ({ ...prev, newPassword: 'New Password must be at least 8 characters.' }));
             return;
         }
-        const token = localStorage.getItem("token");
-        const res = await fetch('http://localhost:8080/api/users/password/set', {
-            method: "PATCH",
-            headers: {
-                'Content-Type': 'application/json',
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({ newPassword: formValues.newPassword })
-        });
-        if (!res.ok) {
-            console.error(await res.text());
+        try {
+            await apiPatch('/api/users/password/set', { newPassword: formValues.newPassword });
+        } catch (err) {
+            console.error(err);
             toast.error("Failed to set password");
             return;
         }
         toast.success("Password set successfully! You can now log in with email/password.");
         setFormValues(prev => ({ ...prev, newPassword: '' }));
         // Refresh user profile to reflect passwordSet = true
-        mutate("http://localhost:8080/api/users");
+        mutate("/api/users");
     };
     function handleLogout() {
-        localStorage.removeItem("token");
-        router.push("/account/login");
+        logout(router);
     }
     return (
         <div>

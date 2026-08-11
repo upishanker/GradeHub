@@ -12,9 +12,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import toast from "react-hot-toast";
 import {ModeToggle} from "@/components/ui/darkmodetoggle";
+import {ApiError, apiPost} from "@/utils/api";
 
 const formSchema = z.object({
     username: z.string().min(3, { message: 'Username must be at least 3 characters.' }),
@@ -54,25 +55,16 @@ export default function SignupPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/api/users/signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(result.data),
-            })
-            if (!response.ok) {
-                console.error(await response.text())
-                toast.error('Failed to create user')
-                return
-            }
+            await apiPost('/api/users/signup', result.data, { skipAuth: true });
             toast.success('User created successfully')
             router.push('/account/login');
         } catch (error) {
             console.error(error)
-            toast.error('An error occurred')
+            toast.error(error instanceof ApiError ? 'Failed to create user' : 'An error occurred')
         }
     };
 
-    const handleGoogleSuccess = async (credentialResponse: any) => {
+    const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
         try {
             const idToken = credentialResponse?.credential;
             if (!idToken) {
@@ -80,18 +72,7 @@ export default function SignupPage() {
                 return;
             }
             // Same endpoint as login. Backend will upsert user and return JWT.
-            const resp = await fetch("http://localhost:8080/api/auth/google", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ idToken }),
-            });
-            if (!resp.ok) {
-                const txt = await resp.text();
-                console.error(txt);
-                toast.error("Google sign-in failed");
-                return;
-            }
-            const data = await resp.json();
+            const data = await apiPost("/api/auth/google", { idToken }, { skipAuth: true });
             localStorage.setItem("token", data.token);
             router.push("/");
         } catch (e) {

@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { Check, ChevronsUpDown, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
     Card,
@@ -31,6 +30,7 @@ import {
 import {NavBar} from "@/components/Navbar";
 import {toNumberGrade} from "@/utils/helpers";
 import toast from "react-hot-toast";
+import {ApiError, apiPost} from "@/utils/api";
 
 
 const seasons = [
@@ -64,7 +64,7 @@ const letterGrades = [
 const formSchema = z.object({
     name: z.string().max(100, { message: 'Name must be less than 100 characters.' }),
     goal: z.union([
-        z.string().refine((val) => letterGrades.includes(val as any), { message: 'Invalid letter grade.' }),
+        z.string().refine((val) => (letterGrades as readonly string[]).includes(val), { message: 'Invalid letter grade.' }),
         z.preprocess(
             (val) => (val === '' ? undefined : Number(val)),
             z.number().min(0, { message: 'Goal must be at least 0.' }).max(100, { message: 'Goal must be at most 100.' })
@@ -125,7 +125,6 @@ export default function AddCourse() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const result = formSchema.safeParse(formValues);
-        const token = localStorage.getItem("token");
 
         if (!result.success) {
             const fieldErrors: { [key: string]: string } = {};
@@ -141,7 +140,7 @@ export default function AddCourse() {
         // Combine season and year to create semester string
         const semester = `${result.data.season.charAt(0).toUpperCase() + result.data.season.slice(1)} ${result.data.year}`;
 
-        const finalGoal = toNumberGrade(result.data.goal as any /* string | number */);
+        const finalGoal = toNumberGrade(result.data.goal as string | number);
         const courseRequest = {
             name: result.data.name,
             goal: finalGoal,
@@ -150,25 +149,13 @@ export default function AddCourse() {
         };
 
         try {
-            const response = await fetch('http://localhost:8080/api/courses', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(courseRequest),
-            })
-            if (!response.ok) {
-                console.error(await response.text())
-                toast.error('Failed to create course')
-                return
-            }
+            await apiPost('/api/courses', courseRequest);
             toast.success('Course created successfully')
             router.push('/dashboard');
 
         } catch (error) {
             console.error(error)
-            toast.error('An error occurred')
+            toast.error(error instanceof ApiError ? 'Failed to create course' : 'An error occurred')
         }
     };
 

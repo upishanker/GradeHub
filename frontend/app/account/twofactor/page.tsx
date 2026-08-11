@@ -16,6 +16,8 @@ import {
     CardFooter,
 } from "@/components/ui/card";
 import {useRouter} from "next/navigation";
+import {ApiError, apiPost} from "@/utils/api";
+import {redirectToLogin} from "@/utils/auth";
 
 export default function TwoFAPage() {
     const [otp, setOtp] = useState("");
@@ -37,7 +39,7 @@ export default function TwoFAPage() {
             }
         } else {
             // Redirect back to login if no sessionId
-            router.push('/login');
+            redirectToLogin(router);
         }
     }, [router]);
 
@@ -52,28 +54,29 @@ export default function TwoFAPage() {
         setError("");
 
         try {
-            const response = await fetch('http://localhost:8080/api/users/verify-2fa', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    loginSessionId: loginSessionId,
-                    code: otp
-                })
-            });
+            const data = await apiPost('/api/users/verify-2fa', {
+                loginSessionId: loginSessionId,
+                code: otp
+            }, { skipAuth: true });
 
-            const data = await response.json();
-
-            if (response.ok) {
-                // Store JWT token
-                localStorage.setItem('token', data.token);
-                // Redirect to dashboard
-                router.push('/dashboard');
-            } else {
-                // Show a red error message below the OTP boxes
-                setError(data.error || 'The code you entered is incorrect.');
-            }
+            // Store JWT token
+            localStorage.setItem('token', data.token);
+            // Redirect to dashboard
+            router.push('/dashboard');
         } catch (err) {
-            setError('Network error. Please try again.');
+            if (err instanceof ApiError) {
+                // Backend returns { "error": "..." } on a bad/expired code.
+                let message = 'The code you entered is incorrect.';
+                try {
+                    const parsed = JSON.parse(err.body);
+                    if (parsed?.error) message = parsed.error;
+                } catch {
+                    // Body wasn't JSON; keep the default message.
+                }
+                setError(message);
+            } else {
+                setError('Network error. Please try again.');
+            }
         } finally {
             setIsLoading(false);
         }
