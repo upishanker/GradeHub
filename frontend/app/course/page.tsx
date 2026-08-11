@@ -63,7 +63,10 @@ function CourseContent() {
         (!isEmpty(assignments));
 
     useEffect(() => {
+        // Seeds the editable form fields once course data arrives from SWR;
+        // intentionally not derived-during-render since the user edits these locally.
         if (courseData) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setName(courseData.name ?? "");
             setGoal(courseData.goal ?? "");
             setSemester(courseData.semester ?? "");
@@ -578,7 +581,7 @@ function CourseContent() {
                     </CardContent>
                 </Card>
             </div>
-            <UploadSyllabus />
+            <UploadSyllabus courseId={Number(search)} />
             <div className="flex justify-center py-10">
                 <Button
                     variant="destructive"

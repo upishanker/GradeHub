@@ -1,14 +1,28 @@
 export default function Tower({ items }: { items: { name: string; weight: number }[] }) {
     // Sort heaviest → lightest
-    const sorted = [...items].sort((a, b) => b.weight - a.weight);
+    const sorted = [...(items ?? [])].sort((a, b) => b.weight - a.weight);
 
-    // Normalize weights to width percentages
-    const maxWeight = sorted[0].weight;
+    // `sorted[0]` is undefined for an empty list, which used to throw.
+    if (sorted.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                Nothing to show yet.
+            </div>
+        );
+    }
+
+    // Normalize weights to width percentages. Guard against a 0 / negative /
+    // non-finite max so the width below can never be Infinity or NaN.
+    const topWeight = sorted[0].weight;
+    const maxWeight = Number.isFinite(topWeight) && topWeight > 0 ? topWeight : 0;
 
     return (
         <div className="flex flex-col-reverse items-center h-full">
             {sorted.map((item, i) => {
-                const widthPercent = (item.weight / maxWeight) * 100;
+                const widthPercent =
+                    maxWeight > 0 && Number.isFinite(item.weight)
+                        ? Math.max(0, Math.min(100, (item.weight / maxWeight) * 100))
+                        : 0;
 
                 return (
                     <div

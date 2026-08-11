@@ -12,6 +12,7 @@ import {FaPencilAlt, FaSave} from "react-icons/fa";
 import toast from "react-hot-toast";
 import {ApiError, apiFetcher, apiPatch} from "@/utils/api";
 import {isTokenValid, logout, redirectToLogin} from "@/utils/auth";
+import type {User} from "@/utils/types";
 
 
 export default function Account() {
@@ -26,7 +27,7 @@ export default function Account() {
 
     const fetcher = apiFetcher;
 
-    const { data, error, isLoading } = useSWR(
+    const { data, error, isLoading } = useSWR<User>(
         isClient ? "/api/users" : null,
         fetcher
     );
@@ -45,6 +46,8 @@ export default function Account() {
     };
 
     useEffect(() => {
+        // Hydration-safe "mounted" flag; must run once on the client after mount.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsClient(true);
         if (!isTokenValid()) {
             redirectToLogin(router);

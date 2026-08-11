@@ -32,6 +32,8 @@ export default function TwoFAPage() {
         if (sessionId) {
             try {
                 const parsed = JSON.parse(sessionId);
+                // Syncing from localStorage (an external system), not deriving local state.
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setLoginSessionId(parsed.loginSessionId || sessionId);
             } catch {
                 // If it's not JSON, use as-is (fallback for plain string values)
@@ -54,7 +56,7 @@ export default function TwoFAPage() {
         setError("");
 
         try {
-            const data = await apiPost('/api/users/verify-2fa', {
+            const data = await apiPost<{ token: string }>('/api/users/verify-2fa', {
                 loginSessionId: loginSessionId,
                 code: otp
             }, { skipAuth: true });

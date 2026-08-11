@@ -7,6 +7,7 @@ import {Card, CardHeader, CardContent, CardFooter} from "@/components/ui/card";
 import courseAndGradeFetcher from "@/utils/fetchers"
 import {apiFetcher} from "@/utils/api";
 import {Course} from "@/utils/types";
+import {letterToGpaPoints, setUserGpaScale, GpaScaleRow} from "@/utils/helpers";
 
 
 const gpaFetcher = apiFetcher;
@@ -14,15 +15,29 @@ ChartJS.register(ArcElement, Legend)
 
 export default function Gpa() {
 
-    const { data: gpa, error: gpaError } = useSWR("/api/users/gpa", gpaFetcher);
+    const { data: gpa, error: gpaError } = useSWR<number>("/api/users/gpa", gpaFetcher);
     const { data: courses } = useSWR<Course[]>("/api/courses?v=2", courseAndGradeFetcher)
+
+    // The letter -> GPA cache in utils/helpers is in-memory and was previously
+    // only ever populated by the Settings page. Fetch it here too so landing
+    // straight on /gpa still honours the user's configured scale.
+    const { data: gpaScale } = useSWR<GpaScaleRow[]>("/api/gradescale", gpaFetcher);
+
+    // Synced during render rather than in an effect: letterToGpaPoints() reads
+    // this cache further down in the SAME render pass, so an effect would land
+    // one render too late and the totals below would show default points until
+    // some unrelated re-render happened. The write is an idempotent cache fill.
+    if (gpaScale) {
+        setUserGpaScale(gpaScale);
+    }
+
     if (gpaError) {
         return 'An error has occurred';
     }
     const gpaData = {
         datasets: [
             {
-                data: [gpa, 4 - gpa],
+                data: [gpa ?? 0, 4 - (gpa ?? 0)],
                 backgroundColor: [
                     'rgba(34, 197, 94, 0.2)',
                     'rgba(128, 128, 128, 0.2)'
@@ -31,15 +46,6 @@ export default function Gpa() {
             },
         ],
     }
-    // Helper function to convert letter grade to GPA points
-    const letterToGpaPoints = (letterGrade: string): number => {
-        const gradeMap: { [key: string]: number } = {
-            'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-            'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'D-': 0.7, 'F': 0.0
-        };
-        return gradeMap[letterGrade] || 0.0;
-    };
-
     const totals = courses?.reduce((acc, course) => {
         if (course.creditHours && course.creditHours > 0 && course.letterGrade) {
             const gradePoints = letterToGpaPoints(course.letterGrade);

@@ -74,7 +74,7 @@ async function parseBody(response: Response): Promise<unknown> {
  * `Content-Type` header is left for the browser to set (important for
  * multipart uploads such as the syllabus OCR endpoint).
  */
-export async function apiRequest<T = any>(
+export async function apiRequest<T = unknown>(
     path: string,
     method: string,
     body?: unknown,
@@ -123,11 +123,11 @@ export async function apiRequest<T = any>(
     return (await parseBody(response)) as T;
 }
 
-export function apiGet<T = any>(path: string, options?: ApiRequestOptions) {
+export function apiGet<T = unknown>(path: string, options?: ApiRequestOptions) {
     return apiRequest<T>(path, "GET", undefined, options);
 }
 
-export function apiPost<T = any>(
+export function apiPost<T = unknown>(
     path: string,
     body?: unknown,
     options?: ApiRequestOptions
@@ -135,7 +135,7 @@ export function apiPost<T = any>(
     return apiRequest<T>(path, "POST", body, options);
 }
 
-export function apiPatch<T = any>(
+export function apiPatch<T = unknown>(
     path: string,
     body?: unknown,
     options?: ApiRequestOptions
@@ -143,7 +143,7 @@ export function apiPatch<T = any>(
     return apiRequest<T>(path, "PATCH", body, options);
 }
 
-export function apiPut<T = any>(
+export function apiPut<T = unknown>(
     path: string,
     body?: unknown,
     options?: ApiRequestOptions
@@ -151,7 +151,7 @@ export function apiPut<T = any>(
     return apiRequest<T>(path, "PUT", body, options);
 }
 
-export function apiDelete<T = any>(path: string, options?: ApiRequestOptions) {
+export function apiDelete<T = unknown>(path: string, options?: ApiRequestOptions) {
     return apiRequest<T>(path, "DELETE", undefined, options);
 }
 
@@ -159,7 +159,7 @@ export function apiDelete<T = any>(path: string, options?: ApiRequestOptions) {
  * Multipart/form-data POST. The `Content-Type` header is intentionally NOT set
  * so the browser can generate the correct multipart boundary.
  */
-export function apiPostFormData<T = any>(
+export function apiPostFormData<T = unknown>(
     path: string,
     formData: FormData,
     options?: ApiRequestOptions
@@ -168,4 +168,6 @@ export function apiPostFormData<T = any>(
 }
 
 /** Convenience fetcher for `useSWR(path, apiFetcher)`. */
-export const apiFetcher = (path: string): Promise<any> => apiGet<any>(path);
+export function apiFetcher<T = unknown>(path: string): Promise<T> {
+    return apiGet<T>(path);
+}

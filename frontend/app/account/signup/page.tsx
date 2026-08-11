@@ -72,7 +72,7 @@ export default function SignupPage() {
                 return;
             }
             // Same endpoint as login. Backend will upsert user and return JWT.
-            const data = await apiPost("/api/auth/google", { idToken }, { skipAuth: true });
+            const data = await apiPost<{ token: string }>("/api/auth/google", { idToken }, { skipAuth: true });
             localStorage.setItem("token", data.token);
             router.push("/");
         } catch (e) {

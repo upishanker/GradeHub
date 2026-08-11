@@ -11,10 +11,12 @@ import { Label } from "@/components/ui/label";
 import {
     setUserGpaScale,
     setCourseLetterPercentScale,
+    DEFAULT_COURSE_LETTER_SCALE,
+    DEFAULT_GPA_SCALE,
 } from "@/utils/helpers";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import {Plus} from "lucide-react";
+import {Plus, Trash2} from "lucide-react";
 import {apiFetcher, apiGet, apiPut} from "@/utils/api";
 
 type Course = {
@@ -114,6 +116,13 @@ export default function SettingsPage() {
         setCourseScalesDirty((prev) => ({ ...prev, [courseId]: true }));
     };
 
+    const removeCourseScaleRow = (courseId: number, idx: number) => {
+        const current = courseScales[courseId] ?? [];
+        const updated = current.filter((_, i) => i !== idx);
+        setCourseScales((prev) => ({ ...prev, [courseId]: updated }));
+        setCourseScalesDirty((prev) => ({ ...prev, [courseId]: true }));
+    };
+
     const saveCourseScale = async (courseId: number) => {
         const rows = courseScales[courseId] ?? [];
         try {
@@ -132,20 +141,11 @@ export default function SettingsPage() {
     };
 
     const loadDefaultCourseScale = (courseId: number) => {
-        const defaults: CourseLetterRow[] = [
-            { letter: "A", minPercent: 92 },
-            { letter: "A-", minPercent: 90 },
-            { letter: "B+", minPercent: 87 },
-            { letter: "B", minPercent: 82 },
-            { letter: "B-", minPercent: 80 },
-            { letter: "C+", minPercent: 77 },
-            { letter: "C", minPercent: 72 },
-            { letter: "C-", minPercent: 70 },
-            { letter: "D+", minPercent: 67 },
-            { letter: "D", minPercent: 62 },
-            { letter: "D-", minPercent: 60 },
-            { letter: "F", minPercent: 0 },
-        ];
+        // Single source of truth lives in utils/helpers; copy the rows so the
+        // shared constant is never mutated by the editor below.
+        const defaults: CourseLetterRow[] = DEFAULT_COURSE_LETTER_SCALE.map((r) => ({
+            ...r,
+        }));
         setCourseScales((prev) => ({ ...prev, [courseId]: defaults }));
         setCourseScalesDirty((prev) => ({ ...prev, [courseId]: true }));
 
@@ -172,6 +172,15 @@ export default function SettingsPage() {
         const working = (localGpa ?? gpaScale ?? []).slice();
         working.push({ letter: "", gpaValue: 0 });
         setLocalGpa(working);
+    };
+
+    const removeGpaRow = (idx: number) => {
+        setLocalGpa(workingGpa.filter((_, i) => i !== idx));
+    };
+
+    const loadDefaultGpaScale = () => {
+        // Same shared table as utils/helpers uses for its fallback.
+        setLocalGpa(DEFAULT_GPA_SCALE.map((r) => ({ ...r })));
     };
 
     const saveGpaScale = async () => {
@@ -282,6 +291,17 @@ export default function SettingsPage() {
                                                                                 )
                                                                             }
                                                                         />
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            aria-label={`Remove ${row.letter || "row"}`}
+                                                                            className="text-destructive"
+                                                                            onClick={() =>
+                                                                                removeCourseScaleRow(c.id, idx)
+                                                                            }
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -327,25 +347,7 @@ export default function SettingsPage() {
                             <div className="text-zinc-500">
                                 No GPA scale configured.
                                 <div className="mt-3">
-                                    <Button
-                                        onClick={() => {
-                                            const defaults: UserGpaRow[] = [
-                                                { letter: "A", gpaValue: 4.0 },
-                                                { letter: "A-", gpaValue: 3.7 },
-                                                { letter: "B+", gpaValue: 3.3 },
-                                                { letter: "B", gpaValue: 3.0 },
-                                                { letter: "B-", gpaValue: 2.7 },
-                                                { letter: "C+", gpaValue: 2.3 },
-                                                { letter: "C", gpaValue: 2.0 },
-                                                { letter: "C-", gpaValue: 1.7 },
-                                                { letter: "D+", gpaValue: 1.3 },
-                                                { letter: "D", gpaValue: 1.0 },
-                                                { letter: "D-", gpaValue: 0.7 },
-                                                { letter: "F", gpaValue: 0.0 },
-                                            ];
-                                            setLocalGpa(defaults);
-                                        }}
-                                    >
+                                    <Button onClick={loadDefaultGpaScale}>
                                         Load Default GPA Scale
                                     </Button>
                                 </div>
@@ -369,6 +371,15 @@ export default function SettingsPage() {
                                                 value={row.gpaValue}
                                                 onChange={(e) => changeGpaField(idx, "gpaValue", e.target.value)}
                                             />
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                aria-label={`Remove ${row.letter || "row"}`}
+                                                className="text-destructive"
+                                                onClick={() => removeGpaRow(idx)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
                                         </div>
                                     ))}
                                 </div>
@@ -377,6 +388,9 @@ export default function SettingsPage() {
                                         Add Row
                                     </Button>
                                     <Button onClick={saveGpaScale}>Save GPA Scale</Button>
+                                    <Button variant="secondary" onClick={loadDefaultGpaScale}>
+                                        Load Defaults
+                                    </Button>
                                 </div>
                             </>
                         )}

@@ -28,7 +28,7 @@ export function LoginForm({
       const email = (form.querySelector("#email") as HTMLInputElement).value;
       const password = (form.querySelector("#password") as HTMLInputElement).value;
 
-      const data = await apiPost('/api/users/login', { email, password }, { skipAuth: true });
+      const data = await apiPost<{ loginSessionId: string }>('/api/users/login', { email, password }, { skipAuth: true });
 
       localStorage.setItem('loginSessionId', data.loginSessionId);
       router.push("/account/twofactor");
@@ -45,7 +45,7 @@ export function LoginForm({
         toast.error("Google login failed: missing credential");
         return;
       }
-      const data = await apiPost("/api/auth/google", { idToken }, { skipAuth: true });
+      const data = await apiPost<{ token: string }>("/api/auth/google", { idToken }, { skipAuth: true });
       // Store your app JWT
       localStorage.setItem("token", data.token);
       // Navigate to the app (adjust path as needed)
